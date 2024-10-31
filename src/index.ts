@@ -2,7 +2,7 @@
  * The type of the constructor of an object.
  */
 type Ctor<Class = any> = (abstract new (...params: any[]) => Class) & {
-	fLeg?: Ctor[]
+	diamondFlatLegacy?: Ctor[]
 }
 /**
  * Black magic.
@@ -57,16 +57,18 @@ type HasBases<TBases extends Ctor[]> = TBases extends []
 		: never
 
 /**
- * Extracts the FLatLEGacy of a class
- * @param base
- * @returns
+ * Gives all the classes from the base up to just before Object
+ * Note: In "uni-legacy", the parent of Diamond is Object
+ * @param base The base class
  */
-function extractFLeg(base: Ctor) {
-	// diamond(A, B) returns [A, B] but `class C extends diamond(A, B)` returns [C, A, B]
-	if (base.fLeg) return [base, ...base.fLeg]
+function* uniLeg(base: Ctor): IterableIterator<Ctor> {
+	yield base
 	for (let ctor = base; ctor !== Object; ctor = Object.getPrototypeOf(ctor.prototype).constructor)
-		if (ctor.fLeg) return [base, ...ctor.fLeg]
-	return [base]
+		yield ctor
+}
+
+function bottomLeg(base: Ctor): Ctor {
+	return [...uniLeg(base)].pop()
 }
 
 /**
@@ -101,27 +103,29 @@ export default function Diamond<TBases extends Ctor[]>(
 		 * becomes:
 		 * X - Y - A - B - I - J
 		 */
-		const fLeg = extractFLeg(base),
+		const fLeg = [base, ...(bottomLeg(base).diamondFlatLegacy || [])],
 			intersection = firstCommon(bases, fLeg)
 		if (!intersection) bases.push(...fLeg)
 		else bases.splice(intersection[0], 0, ...fLeg.slice(0, intersection[1]))
 	}
-	function nextInFLeg(ctor: any, name: string) {
+	function nextInFLeg(ctor: Ctor, name: string) {
 		let ndx = /*Object.getPrototypeOf(ctor.prototype) === Diamond.prototype
 				? -1
-				: */ ctor.fLeg.findIndex((base) => Object.getPrototypeOf(base.prototype).constructor === Diamond)
+				: */ ctor.diamondFlatLegacy.findIndex(
+			(base) => Object.getPrototypeOf(base.prototype).constructor === Diamond
+		)
 		// When you don't find one descendant who is "you" [`Diamond` = "my Diamond"], then you are the first ancestor
 		// In this case, you should initiate the index to `-1` so that `++ndx` will begin at 0
-		// (Had to be commented as this "two wrongs make a good" is quite unexpected, even at writing time)
+		// (Had to be commented as this "two wrongs make a right" is quite unexpected, even at writing time)
 		let rv: PropertyDescriptor
-		do rv = Object.getOwnPropertyDescriptor(ctor.fLeg[++ndx].prototype, name)
-		while (!rv && ndx < ctor.fLeg.length)
+		do rv = Object.getOwnPropertyDescriptor(ctor.diamondFlatLegacy[++ndx].prototype, name)
+		while (!rv && ndx < ctor.diamondFlatLegacy.length)
 		return rv
 	}
 	const buildingStrategy = new Map<Ctor, Ctor[]>()
 	const myResponsibility: Ctor[] = []
 	class Diamond {
-		static fLeg = bases
+		static diamondFlatLegacy = bases
 		constructor(...args: any[]) {
 			try {
 				const responsibility = buildingDiamond
@@ -153,11 +157,8 @@ export default function Diamond<TBases extends Ctor[]>(
 	 */
 	let nextResponsibility = myResponsibility
 	for (const base of bases) {
-		let endTSLegacy = Object.getPrototypeOf(base.prototype).constructor
-		while (!endTSLegacy.fLeg && endTSLegacy !== Object)
-			endTSLegacy = Object.getPrototypeOf(endTSLegacy.prototype).constructor
 		nextResponsibility.unshift(base)
-		if (endTSLegacy.fLeg) buildingStrategy.set(base, (nextResponsibility = []))
+		if (bottomLeg(base).diamondFlatLegacy) buildingStrategy.set(base, (nextResponsibility = []))
 	}
 	/**
 	 * Fills the diamond with all the properties of the bases
@@ -184,7 +185,22 @@ export default function Diamond<TBases extends Ctor[]>(
 	return <new (...args: any[]) => HasBases<TBases>>(<unknown>Diamond)
 }
 
+/**
+ * `instanceof` substitute for diamonds
+ * @param obj Object to test
+ * @param ctor Class to test
+ * @returns If by a mean or another, `obj` is an instance of `ctor`
+ */
+export function instanceOf(obj: any, ctor: Ctor) {
+	if (obj instanceof ctor) return true
+	if (!obj || typeof obj !== 'object') return false
+
+	const fLeg = bottomLeg(obj.constructor).diamondFlatLegacy
+	if (!fLeg) return false
+	for (const base of fLeg) if (base === ctor || base.prototype instanceof ctor) return true
+	return false
+}
+
 /* Idée pour plus tard:
 B.property.method = classMethod(B, (source)=> function(this: B, ...) { ... })
 */
-// TODO: instanceof

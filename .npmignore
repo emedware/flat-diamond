@@ -1,9 +1,5 @@
 /node_modules
 /test
 /coverage
-/docs
 .*
-*.config.js
-*.config.json
-.gitignore
-/.svelte-kit
+jest.*

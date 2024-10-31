@@ -46,11 +46,11 @@ Yes, `super` still works and will have a dynamic meaning depending on where it i
 import D from `flat-diamond`
 
 class X extends D() { method() {} }
-class A extends D(X) { method() { [...]; super.method() } }	// Here will be the change
+class A extends D(X) { method() { [...]; super.method() } }    // Here will be the change
 class B extends D(X) { method() { [...]; super.method() } }
 class C extends D(A, B) {}
-let testA = new A(),	// A - X
-	testC = new C()		// C - A - B - X
+let testA = new A(),    // A - X
+    testC = new C()     // C - A - B - X
 testA.method()
 testC.method()
 ```
@@ -83,7 +83,7 @@ class B extends D() { constructor() { super(); ...} }
 class Xb extends D(B) { constructor() { super(); ...} }
 
 let testA = new Xa(),
-	testB = new Xb()
+    testB = new Xb()
 ```
 
 When constructing `Xa`, the constructor of `A` will be invoked with `this` being of class `A`
@@ -96,33 +96,17 @@ When constructing `Xb`, the constructor of `B` will be invoked with `this` being
 
 We can of course `extend Diamond(A, B, C, D, E, ...theRest)`.
 
-### Construction concern
+### `instanceof` does not work anymore!
 
-The main concern is about the fact that a class can think it extends directly another and another class can "come" in between. It is mainly concerning for constructors.
-
-The best way to palliate is to use option objects.
-
-When a `Diamond`-ed class constructor passes an argument to `super`, this argument will be used for its descendant but also all the descendants between itself and the next `Diamond`-ed class.
+Breathe and import it.
 
 ```ts
-class X1 { constructor(n: number) { ... } }
-class D1 extends D(X1) { constructor(n: number) { super(n+1); ... } }
-class X2 { constructor(n: number) { ... } }
-class X3 extends X2 { constructor(n: number) { super(n+2); ... } }
-class D2 extends D(X3, D1) { constructor(n: number) { super(n+1); ... } }
-
-let test = new D2(0)
+import Diamond, { instanceOf } from 'flat-diamond'
 ```
 
-Constructors will occur like this (indentation means we entered a `super`)
+### But I modify my prototypes dynamically...
 
-```
-D2(0)
-	D1(1)
-		X1(3)
-	X3(1)
-		X2(2)
-```
+Cool. It's working too... Keep on rocking!
 
 ### Order conflicts
 
@@ -149,3 +133,39 @@ class A extends D(X, Y) { ... }
 ```
 
 Well, the constructor and `super.method(...)` of `X` will be called twice.... Like if it did not extend `D()`
+
+### Abstraction
+
+`new Diamond(...)` is not possible as it is declared as abstract (even if it has no abstract member) - This is so that it can inherit abstract classes!
+
+The only problem still worked on is that if a class who has no implementation for an abstract method appears before another one who has an implementation, the method will be considered abstract (so the order of arguments for `Diamond(...)` matters here)
+
+> :arrow_up: Btw, if someone could help me here... It's on `HasBases` definition
+
+### Construction concern
+
+The main concern is about the fact that a class can think it extends directly another and another class can "come" in between. It is mainly concerning for constructors.
+
+The best way to palliate is to use option objects.
+
+When a `Diamond`-ed class constructor passes an argument to `super`, this argument will be used for its descendant but also all the descendants between itself and the next `Diamond`-ed class.
+
+```ts
+class X1 { constructor(n: number) { ... } }
+class D1 extends D(X1) { constructor(n: number) { super(n+1); ... } }
+class X2 { constructor(n: number) { ... } }
+class X3 extends X2 { constructor(n: number) { super(n+2); ... } }
+class D2 extends D(X3, D1) { constructor(n: number) { super(n+1); ... } }
+
+let test = new D2(0)
+```
+
+Constructors will occur like this (indentation means we entered a `super`)
+
+```
+D2(0)
+    D1(1)
+        X1(3)
+    X3(1)
+        X2(2)
+```

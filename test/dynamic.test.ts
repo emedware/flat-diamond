@@ -1,7 +1,7 @@
 import Diamond from '../src'
 
 class A extends Diamond() {
-	method(x) {
+	method(x: number) {
 		return x + 1
 	}
 }
@@ -11,19 +11,19 @@ class B extends Diamond(A) {
 		const [myArg, ...rest] = args
 		super(...rest)
 	}
-	method(x) {
+	method(x: number) {
 		return super.method(x + 2)
 	}
 }
 
 class C extends Diamond(A) {
-	method(x) {
+	method(x: number) {
 		return super.method(x + 3)
 	}
 }
 
 class D extends Diamond(B, C) {
-	method(x) {
+	method(x: number) {
 		return super.method(x + 4)
 	}
 }
