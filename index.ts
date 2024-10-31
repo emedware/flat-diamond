@@ -96,15 +96,22 @@ export default function Diamond<TBases extends Ctor[]>(
 		 * becomes:
 		 * X - Y - A - B - I - J
 		 */
-		const fLeg = [base, ...(fLegs(base) || [])]
-		let iBases: number,
+		let fLeg = [base, ...(fLegs(base) || [])]
+		let iBases = 0,
+			iFLeg: number
+		do {
 			iFLeg = -1
-		for (iBases = 0; iBases < bases.length; iBases++) {
-			iFLeg = fLeg.indexOf(bases[iBases])
-			if (iFLeg >= 0) break
-		}
-		if (iFLeg < 0) bases.push(...fLeg)
-		else bases.splice(iBases, 0, ...fLeg.slice(0, iFLeg))
+			for (iBases = 0; iBases < bases.length; iBases++) {
+				iFLeg = fLeg.indexOf(bases[iBases])
+				if (iFLeg >= 0) break
+			}
+			if (iFLeg >= 0) {
+				bases.splice(iBases, 0, ...fLeg.slice(0, iFLeg))
+				iBases += iFLeg + 1
+				fLeg = fLeg.slice(iFLeg + 1)
+			}
+		} while (iFLeg >= 0)
+		bases.push(...fLeg)
 	}
 	const buildingStrategy = new Map<Ctor, Ctor[]>()
 	const myResponsibility: Ctor[] = []

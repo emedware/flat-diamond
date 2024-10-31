@@ -124,7 +124,7 @@ class X4 { ... }
 class D2 extends D(X1, X3, D1, X4, X2)
 ```
 
-Here, the flat legacy od `D2` will be `D1 - X1 - X3 - X4 - X2`. The fact that `D1` specifies it inherits from `X1` is promised to be kept, the order in the arguments is surely going to happen if the situation is not too complex.
+Here, the flat legacy od `D2` will be `D1 - X1 - X3 - X2 - X4`. The fact that `D1` specifies it inherits from `X1` is promised to be kept, the order in the arguments is surely going to happen if the situation is not too complex.
 
 ### Dealing with non-`Diamond`-ed classes
 
@@ -143,7 +143,7 @@ For the library, a class implementing another without going through the `Diamond
 
 ### Abstraction
 
-`new Diamond(...)` is not possible as it is declared as abstract (even if it has no abstract member) - This is so that it can inherit abstract classes!
+`new Diamond(...)` is not possible as it is declared abstract (even if it has no abstract member) - This is so that it can inherit abstract classes!
 
 The only problem still worked on is that if a class who has no implementation for an abstract method appears before another one who has an implementation, the method will be considered abstract (so the order of arguments for `Diamond(...)` matters here), even though a `//@ts-ignore` does the job.
 
