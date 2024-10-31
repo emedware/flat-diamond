@@ -1,3 +1,4 @@
+//  TODO: WeakMap instead of `diamondFlatLegacy`
 /**
  * The type of the constructor of an object.
  */
@@ -89,6 +90,7 @@ let buildingDiamond: {
 	built: object
 	strategy: BuildingStrategy
 } | null = null
+const temporaryBuiltObjects = new WeakMap<object, object>()
 
 export default function Diamond<TBases extends Ctor[]>(
 	...baseClasses: TBases
@@ -108,46 +110,41 @@ export default function Diamond<TBases extends Ctor[]>(
 		if (!intersection) bases.push(...fLeg)
 		else bases.splice(intersection[0], 0, ...fLeg.slice(0, intersection[1]))
 	}
-	function nextInFLeg(ctor: Ctor, name: string) {
-		let ndx = /*Object.getPrototypeOf(ctor.prototype) === Diamond.prototype
-				? -1
-				: */ ctor.diamondFlatLegacy.findIndex(
-			(base) => Object.getPrototypeOf(base.prototype).constructor === Diamond
-		)
-		// When you don't find one descendant who is "you" [`Diamond` = "my Diamond"], then you are the first ancestor
-		// In this case, you should initiate the index to `-1` so that `++ndx` will begin at 0
-		// (Had to be commented as this "two wrongs make a right" is quite unexpected, even at writing time)
-		let rv: PropertyDescriptor
-		do rv = Object.getOwnPropertyDescriptor(ctor.diamondFlatLegacy[++ndx].prototype, name)
-		while (!rv && ndx < ctor.diamondFlatLegacy.length)
-		return rv
-	}
 	const buildingStrategy = new Map<Ctor, Ctor[]>()
 	const myResponsibility: Ctor[] = []
 	class Diamond {
 		static diamondFlatLegacy = bases
 		constructor(...args: any[]) {
-			try {
-				const responsibility = buildingDiamond
+			const responsibility = buildingDiamond
 					? buildingDiamond.strategy.get(this.constructor as Ctor)
-					: myResponsibility
-				if (!buildingDiamond)
-					buildingDiamond = {
-						built: Object.create(this.constructor.prototype),
-						strategy: buildingStrategy
-					} // It will be set to `null` on purpose in the process and needs to be restored
-				const locallyStoredDiamond = buildingDiamond
-				for (const [ndx, subs] of responsibility.entries()) {
-					// `any` because declared as an abstract class
-					const temp = new (subs as any)(...args)
+					: myResponsibility,
+				itsMe = !buildingDiamond
+			if (!buildingDiamond)
+				buildingDiamond = {
+					built: this,
+					strategy: buildingStrategy
+				} // It will be set to `null` on purpose in the process and needs to be restored
+			const locallyStoredDiamond = buildingDiamond
+			try {
+				for (const subs of responsibility) {
+					// Builds the temporary object and import all its properties
+					const temp = new (subs as any)(...args) // `any` because declared as an abstract class
 					Object.defineProperties(
 						locallyStoredDiamond.built,
 						Object.getOwnPropertyDescriptors(temp)
 					)
 				}
-				Object.setPrototypeOf(this, Object.getPrototypeOf(locallyStoredDiamond.built))
-				Object.defineProperties(this, Object.getOwnPropertyDescriptors(locallyStoredDiamond.built))
 			} finally {
+				if (!itsMe) {
+					// Feels the same
+					Object.setPrototypeOf(this, Object.getPrototypeOf(locallyStoredDiamond.built))
+					Object.defineProperties(
+						this,
+						Object.getOwnPropertyDescriptors(locallyStoredDiamond.built)
+					)
+					// Is the same (through `constructedObject`)
+					temporaryBuiltObjects.set(this, locallyStoredDiamond.built)
+				}
 				buildingDiamond = null
 			}
 		}
@@ -167,6 +164,20 @@ export default function Diamond<TBases extends Ctor[]>(
 	for (const base of bases)
 		Object.getOwnPropertyNames(base.prototype).forEach((name) => fLegged.add(name))
 
+	function nextInFLeg(ctor: Ctor, name: string) {
+		let ndx = /*Object.getPrototypeOf(ctor.prototype) === Diamond.prototype
+				? -1
+				: */ ctor.diamondFlatLegacy.findIndex(
+			(base) => Object.getPrototypeOf(base.prototype).constructor === Diamond
+		)
+		// When you don't find one descendant who is "you" [`Diamond` = "my Diamond"], then you are the first ancestor
+		// In this case, you should initiate the index to `-1` so that `++ndx` will begin at 0
+		// (Had to be commented as this "two wrongs make a right" is quite unexpected, even at writing time)
+		let rv: PropertyDescriptor
+		do rv = Object.getOwnPropertyDescriptor(ctor.diamondFlatLegacy[++ndx].prototype, name)
+		while (!rv && ndx < ctor.diamondFlatLegacy.length)
+		return rv
+	}
 	for (const name of fLegged)
 		if (name !== 'constructor') {
 			Object.defineProperty(Diamond.prototype, name, {
@@ -183,6 +194,16 @@ export default function Diamond<TBases extends Ctor[]>(
 		}
 
 	return <new (...args: any[]) => HasBases<TBases>>(<unknown>Diamond)
+}
+
+/**
+ * As constructors build temporary objects, this function returns a reference to the real object being constructed.
+ * In other cases, it just returns the object itself
+ * @param obj `this` - the object being constructed by this constructor
+ * @returns
+ */
+export function constructedObject(obj: object) {
+	return temporaryBuiltObjects.get(obj) || obj
 }
 
 /**

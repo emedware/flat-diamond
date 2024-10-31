@@ -10,7 +10,7 @@ Existing inheritance: `A - B - C`.
 When writing `class X extends A`, we find the inheritance `X - A - B - C`
 
 Flattened inheritance: `X - Y - I - J` and `A - B - I - J`.
-When writing `class O extends X, A`, we find the inheritance `O - X - Y - A - B - I - J`
+When writing `class O extends X, A`, we find the flat legacy `O - X - Y - A - B - I - J`
 
 Flattening operation for `[ X, A ]`
 
@@ -59,9 +59,10 @@ In the first case (`testA.method()`), the `super.method()` will call the one def
 
 ### A bit made up ?
 
-No, and even well constructed! The toughest was to have constructors working. And it's done. In the previous exemple (`C - A - B - X`), because `super(...)` has to be the first sentence of a constructor, invoking `new C()` will invoke the constructors of `X`, `B`, `A` then `C` in sequence
+No, and even well constructed! In the previous exemple (`C - A - B - X`), because `super(...)` has to be the first sentence of a constructor, invoking `new C()` will invoke the constructors of `C`, `A`, `B` then `X` in sequence (roughly)
 
-> :warning: Not on the same object, but it really feels the same
+> :warning: Not on the same object, even if it really feels the same.
+> When constructing, `this` is a temporary object and it cannot be used as a reference - as discussed [below](#substitute-for-this-stability)
 
 ## But ... How ?
 
@@ -71,7 +72,7 @@ The class created by the library (`Diamond(A, B)`) will implement all the proper
 
 The construction scheme is a bit complex as a `Diamond` class is geared to build its legacy and the legacy of others.
 
-This means that the information about who inherits from you comes ... from who you inherits from.
+This means that the information about who inherits from you comes ... from who you inherit from.
 
 Ie., this is the difference between these two situations :
 
@@ -110,7 +111,7 @@ Cool. It's working too... Keep on rocking!
 
 ### Order conflicts
 
-Lazily resolved by static that the argument order of the function `Diamond(...)` is _consultative_
+Lazily resolved by stating that the argument order of the function `Diamond(...)` is _consultative_
 
 ```ts
 class X1 { ... }
@@ -121,7 +122,7 @@ class X4 { ... }
 class D2 extends D(X1, X3, D1, X4, X2)
 ```
 
-Here, the order will be `D1 - X1 - X3 - X4 - X2`. The fact that `D1` specifies it inherits from `X1` is promised to be kept, the order in the arguments is surely going to happen if the situation is not too complex.
+Here, the flat legacy od `D2` will be `D1 - X1 - X3 - X4 - X2`. The fact that `D1` specifies it inherits from `X1` is promised to be kept, the order in the arguments is surely going to happen if the situation is not too complex.
 
 ### Dealing with non-`Diamond`-ed classes
 
@@ -140,13 +141,13 @@ Well, the constructor and `super.method(...)` of `X` will be called twice.... Li
 
 The only problem still worked on is that if a class who has no implementation for an abstract method appears before another one who has an implementation, the method will be considered abstract (so the order of arguments for `Diamond(...)` matters here)
 
-> :arrow_up: Btw, if someone could help me here... It's on `HasBases` definition
+> :arrow_up: Btw, if someone could help me here... It's on `HasBases` type definition
 
 ### Construction concern
 
-The main concern is about the fact that a class can think it extends directly another and another class can "come" in between. It is mainly concerning for constructors.
+The main concern is about the fact that a class can think it extends directly another and another class can "come" in between in some legacy schemes. It is mainly concerning for constructors.
 
-The best way to palliate is to use option objects.
+The best way to palliate is to use option objects for constructor arguments.
 
 When a `Diamond`-ed class constructor passes an argument to `super`, this argument will be used for its descendant but also all the descendants between itself and the next `Diamond`-ed class.
 
@@ -169,3 +170,29 @@ D2(0)
     X3(1)
         X2(2)
 ```
+
+#### Substitute for `this` stability
+
+Because constructors cannot be invoked like other functions (it was simpler in older days), the objects have to be duplicated on construction.
+
+For instance, one cannot use :
+
+```ts
+    constructor() {
+        super{}
+        instances.register(this);
+    }
+```
+
+When constructing, the function `constructedObject` helps you retrieve the actual instance being constructed - this is the one you want to refer to.
+
+```ts
+import D, { constructedObject } from 'flat-diamond'
+...
+    constructor() {
+        super()
+        instances.register(constructedObject(this))
+    }
+```
+
+> Note: There is no need to modify it directly, all the properties initialized on the temporary object are going to be transposed on it

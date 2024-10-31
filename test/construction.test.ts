@@ -1,4 +1,4 @@
-import D from '../src'
+import D, { constructedObject } from '../src'
 import { log, logs } from './logger'
 
 class End1 {
@@ -26,10 +26,11 @@ class Y extends D(X) {
 		log('Y:', aValue)
 	}
 }
-
+let constructedObjectFromA: any = null
 class A extends D() {
 	constructor(aValue: string) {
 		super(aValue + ' and A')
+		constructedObjectFromA = constructedObject(this)
 		log('A:', aValue)
 	}
 }
@@ -52,7 +53,7 @@ beforeAll(() => {
 	logs() //make sure logs are cleared
 })
 test('construction', () => {
-	new C('X')
+	const c = new C('X')
 	expect(logs()).toEqual([
 		'End1: X and C and B and A',
 		'A: X and C and B',
@@ -64,4 +65,5 @@ test('construction', () => {
 		'Y: B...',
 		'C: X'
 	])
+	expect(c).toBe(constructedObjectFromA)
 })
