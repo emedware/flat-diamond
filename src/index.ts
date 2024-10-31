@@ -1,10 +1,7 @@
-//  TODO: WeakMap instead of `diamondFlatLegacy`
 /**
  * The type of the constructor of an object.
  */
-type Ctor<Class = any> = (abstract new (...params: any[]) => Class) & {
-	diamondFlatLegacy?: Ctor[]
-}
+type Ctor<Class = any> = abstract new (...params: any[]) => Class
 /**
  * Black magic.
  * type `U = X | Y | Z` => `I = X & Y & Z`
@@ -51,38 +48,31 @@ type HasBases<TBases extends Ctor[]> = TBases extends []
 	: TBases extends [infer TBase, ...infer TRest]
 		? TBase extends Ctor
 			? TRest extends Ctor[]
-				? //Both<InstanceType<TBase>, HasBases<TRest>>
-					InstanceType<TBase> & Omit<HasBases<TRest>, keyof InstanceType<TBase>>
+				? InstanceType<TBase> & Omit<HasBases<TRest>, keyof InstanceType<TBase>>
 				: never
 			: never
 		: never
-
 /**
  * Gives all the classes from the base up to just before Object
  * Note: In "uni-legacy", the parent of Diamond is Object
  * @param base The base class
  */
-function* uniLeg(base: Ctor): IterableIterator<Ctor> {
+function* linearLeg(base: Ctor): IterableIterator<Ctor> {
 	yield base
 	for (let ctor = base; ctor !== Object; ctor = Object.getPrototypeOf(ctor.prototype).constructor)
 		yield ctor
 }
 
-function bottomLeg(base: Ctor): Ctor {
-	return [...uniLeg(base)].pop()
-}
-
 /**
- * Finds the first common element between two arrays
- * @param arr1
- * @param arr2
- * @returns [index1, index2] so that arr1[index1] === arr2[index2]
+ * Gets the bottom (uni-)legacy of a class just before Object (like Diamond)
  */
-function firstCommon<T>(arr1: T[], arr2: T[]) {
-	for (const i1 in arr1) {
-		const i2 = arr2.indexOf(arr1[i1])
-		if (i2 !== -1) return [Number(i1), i2]
-	}
+function bottomLeg(ctor: Ctor) {
+	let last: Ctor = null
+	for (; ctor !== Object; ctor = Object.getPrototypeOf(ctor.prototype).constructor) last = ctor
+	return last
+}
+function fLegs(ctor: Ctor) {
+	return allFLegs.get(bottomLeg(ctor))
 }
 
 type BuildingStrategy = Map<Ctor, Ctor[]>
@@ -90,7 +80,8 @@ let buildingDiamond: {
 	built: object
 	strategy: BuildingStrategy
 } | null = null
-const temporaryBuiltObjects = new WeakMap<object, object>()
+const temporaryBuiltObjects = new WeakMap<object, object>(),
+	allFLegs = new WeakMap<Ctor, Ctor[]>()
 
 export default function Diamond<TBases extends Ctor[]>(
 	...baseClasses: TBases
@@ -105,15 +96,19 @@ export default function Diamond<TBases extends Ctor[]>(
 		 * becomes:
 		 * X - Y - A - B - I - J
 		 */
-		const fLeg = [base, ...(bottomLeg(base).diamondFlatLegacy || [])],
-			intersection = firstCommon(bases, fLeg)
-		if (!intersection) bases.push(...fLeg)
-		else bases.splice(intersection[0], 0, ...fLeg.slice(0, intersection[1]))
+		const fLeg = [base, ...(fLegs(base) || [])]
+		let iBases: number,
+			iFLeg = -1
+		for (iBases = 0; iBases < bases.length; iBases++) {
+			iFLeg = fLeg.indexOf(bases[iBases])
+			if (iFLeg >= 0) break
+		}
+		if (iFLeg < 0) bases.push(...fLeg)
+		else bases.splice(iBases, 0, ...fLeg.slice(0, iFLeg))
 	}
 	const buildingStrategy = new Map<Ctor, Ctor[]>()
 	const myResponsibility: Ctor[] = []
 	class Diamond {
-		static diamondFlatLegacy = bases
 		constructor(...args: any[]) {
 			const responsibility = buildingDiamond
 					? buildingDiamond.strategy.get(this.constructor as Ctor)
@@ -149,33 +144,36 @@ export default function Diamond<TBases extends Ctor[]>(
 			}
 		}
 	}
+	allFLegs.set(Diamond, bases)
 	/**
 	 * Constructs the building strategy for building this class and only this class with its specific legacy
 	 */
 	let nextResponsibility = myResponsibility
 	for (const base of bases) {
 		nextResponsibility.unshift(base)
-		if (bottomLeg(base).diamondFlatLegacy) buildingStrategy.set(base, (nextResponsibility = []))
+		if (fLegs(base)) buildingStrategy.set(base, (nextResponsibility = []))
 	}
 	/**
 	 * Fills the diamond with all the properties of the bases
 	 */
 	const fLegged = new Set<string>()
 	for (const base of bases)
-		Object.getOwnPropertyNames(base.prototype).forEach((name) => fLegged.add(name))
+		for (const uniLeg of linearLeg(base))
+			Object.getOwnPropertyNames(uniLeg.prototype).forEach((name) => fLegged.add(name))
 
 	function nextInFLeg(ctor: Ctor, name: string) {
-		let ndx = /*Object.getPrototypeOf(ctor.prototype) === Diamond.prototype
+		const fLeg = fLegs(ctor)
+		let ndx = /*bottomLeg(ctor) === Diamond.prototype
 				? -1
-				: */ ctor.diamondFlatLegacy.findIndex(
-			(base) => Object.getPrototypeOf(base.prototype).constructor === Diamond
-		)
+				: */ fLeg.findIndex((base) => bottomLeg(base) === Diamond)
 		// When you don't find one descendant who is "you" [`Diamond` = "my Diamond"], then you are the first ancestor
 		// In this case, you should initiate the index to `-1` so that `++ndx` will begin at 0
 		// (Had to be commented as this "two wrongs make a right" is quite unexpected, even at writing time)
 		let rv: PropertyDescriptor
-		do rv = Object.getOwnPropertyDescriptor(ctor.diamondFlatLegacy[++ndx].prototype, name)
-		while (!rv && ndx < ctor.diamondFlatLegacy.length)
+		do
+			for (const uniLeg of linearLeg(fLeg[++ndx]))
+				if ((rv = Object.getOwnPropertyDescriptor(uniLeg.prototype, name))) break
+		while (!rv && ndx < fLeg.length)
 		return rv
 	}
 	for (const name of fLegged)
@@ -216,9 +214,8 @@ export function instanceOf(obj: any, ctor: Ctor) {
 	if (obj instanceof ctor) return true
 	if (!obj || typeof obj !== 'object') return false
 
-	const fLeg = bottomLeg(obj.constructor).diamondFlatLegacy
-	if (!fLeg) return false
-	for (const base of fLeg) if (base === ctor || base.prototype instanceof ctor) return true
+	for (const base of fLegs(obj.constructor) || [])
+		if (base === ctor || base.prototype instanceof ctor) return true
 	return false
 }
 

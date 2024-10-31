@@ -1,9 +1,8 @@
 import Diamond from '../src'
 import { log, logs } from './logger'
 
-abstract class A extends Diamond() {
+abstract class A {
 	constructor() {
-		super()
 		this.log('construct A')
 	}
 	log(...args: any[]) {
@@ -21,6 +20,9 @@ abstract class B extends Diamond(A) {
 		super()
 		this.log('construct B')
 	}
+	absFunc(x: number): number {
+		return 42
+	}
 	fieldB = true
 	func(x: number) {
 		this.log('func B')
@@ -32,16 +34,14 @@ abstract class C extends Diamond(A) {
 		super()
 		this.log('construct C')
 	}
-	// TODO: Here, if D extends diamond(B, C), then it's considered abstract - cf index.ts
-	absFunc(x: number): number {
-		return 42
-	}
 	fieldC = true
 	func(x: number) {
 		this.log('func C')
 		return 2 + super.func(x)
 	}
 }
+// TODO: Here, if D extends diamond(B, C), then it's not considered abstract - cf README.md#abstraction
+//@ts-expect-error
 class D extends Diamond(C, B) {
 	constructor() {
 		super()
@@ -61,7 +61,7 @@ beforeEach(() => {
 test('call orders', () => {
 	const obj = new D()
 	expect(logs()).toEqual([
-		'[class=D] construct A',
+		'[class=A] construct A',
 		'[class=D] construct B',
 		'[class=D] construct C',
 		'[class=D] construct D'

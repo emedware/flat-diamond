@@ -139,7 +139,7 @@ Well, the constructor and `super.method(...)` of `X` will be called twice.... Li
 
 `new Diamond(...)` is not possible as it is declared as abstract (even if it has no abstract member) - This is so that it can inherit abstract classes!
 
-The only problem still worked on is that if a class who has no implementation for an abstract method appears before another one who has an implementation, the method will be considered abstract (so the order of arguments for `Diamond(...)` matters here)
+The only problem still worked on is that if a class who has no implementation for an abstract method appears before another one who has an implementation, the method will be considered abstract (so the order of arguments for `Diamond(...)` matters here), even though a `//@ts-ignore` does the job.
 
 > :arrow_up: Btw, if someone could help me here... It's on `HasBases` type definition
 
@@ -196,3 +196,9 @@ import D, { constructedObject } from 'flat-diamond'
 ```
 
 > Note: There is no need to modify it directly, all the properties initialized on the temporary object are going to be transposed on it
+
+## Participation
+
+The best (even if not only) way to report a bug is to PR a failing unit test.
+
+I have been really struggling with the [`HasBases` issue](#abstraction) and didn't find a way to detect in Typescript types definition if a method is abstract or not - if someone has an idea.
