@@ -1,4 +1,4 @@
-import Diamond from '../src'
+import Diamond from '..'
 import { log, logs } from './logger'
 
 class A extends Diamond() {

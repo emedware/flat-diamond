@@ -1,4 +1,4 @@
-import Diamond from '../src'
+import Diamond from '..'
 import { log, logs } from './logger'
 
 abstract class A {
@@ -40,8 +40,7 @@ abstract class C extends Diamond(A) {
 		return 2 + super.func(x)
 	}
 }
-// TODO: Here, if D extends diamond(B, C), then it's not considered abstract - cf README.md#abstraction
-//@ts-expect-error
+//@ts-expect-error Here, if D extends diamond(B, C), then it's not considered abstract - cf README.md#abstraction
 class D extends Diamond(C, B) {
 	constructor() {
 		super()

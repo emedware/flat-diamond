@@ -1,4 +1,4 @@
-import D, { instanceOf } from '../src'
+import D, { instanceOf } from '..'
 class A1 {}
 class A2 extends A1 {}
 class B1 {}

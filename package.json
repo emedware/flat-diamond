@@ -2,13 +2,22 @@
 	"name": "flat-diamond",
 	"version": "1.0.0",
 	"description": "typescript multiple inheritance",
-	"main": "src/index.ts",
+	"keywords": [
+		"typescript",
+		"multiple inheritance",
+		"diamond problem",
+		"mixin",
+		"class composition",
+		"class inheritance",
+		"oop"
+	],
+	"main": "index.ts",
 	"scripts": {
 		"test": "jest",
 		"test:coverage": "jest --coverage"
 	},
-	"author": "",
-	"license": "ISC",
+	"author": "François Marie <eeddow@gmail.com>",
+	"license": "GPL-3.0-only",
 	"dependencies": {},
 	"devDependencies": {
 		"typescript": "^5.3.3",

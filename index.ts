@@ -110,11 +110,11 @@ export default function Diamond<TBases extends Ctor[]>(
 	const myResponsibility: Ctor[] = []
 	class Diamond {
 		constructor(...args: any[]) {
-			const responsibility = buildingDiamond
-					? buildingDiamond.strategy.get(this.constructor as Ctor)
-					: myResponsibility,
-				itsMe = !buildingDiamond
-			if (!buildingDiamond)
+			const itsMe = !buildingDiamond,
+				responsibility = itsMe
+					? myResponsibility
+					: buildingDiamond.strategy.get(this.constructor as Ctor)
+			if (itsMe)
 				buildingDiamond = {
 					built: this,
 					strategy: buildingStrategy

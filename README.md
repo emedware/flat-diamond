@@ -26,6 +26,8 @@ X - Y - A - B - I - J
 
 So, basically, everything ends up in a classic legacy scheme that can be managed by typescript.
 
+> Note: Of course, the class `Y` has not been modified, this flat legacy is particular to `O` and `Y` can appear in many others with many other "direct parents"
+
 ## But the syntax does not exist!
 
 Yes, that is the why of this library
@@ -59,14 +61,14 @@ In the first case (`testA.method()`), the `super.method()` will call the one def
 
 ### A bit made up ?
 
-No, and even well constructed! In the previous exemple (`C - A - B - X`), because `super(...)` has to be the first sentence of a constructor, invoking `new C()` will invoke the constructors of `C`, `A`, `B` then `X` in sequence (roughly)
+No, and even well constructed! In the previous example (`C - A - B - X`), invoking `new C()` will invoke the constructors of `C`, `A`, `B` then `X` in sequence (roughly)
 
 > :warning: Not on the same object, even if it really feels the same.
 > When constructing, `this` is a temporary object and it cannot be used as a reference - as discussed [below](#substitute-for-this-stability)
 
 ## But ... How ?
 
-The class created by the library (`Diamond(A, B)`) will implement all the properties of all the classes appearing in the flattened legacy as property get. It will then use the stored legacy (in the class created by the library, not yours) to retrieve the value from the good prototype.
+The class created by the library (`Diamond(A, B)`) will implement all the properties of all the classes appearing in the flattened legacy as accessors. It will then use the stored legacy (in the class created by the library, not yours) to retrieve the value from the good prototype.
 
 ### There is no `get constructor()`
 
@@ -134,6 +136,10 @@ class A extends D(X, Y) { ... }
 ```
 
 Well, the constructor and `super.method(...)` of `X` will be called twice.... Like if it did not extend `D()`
+
+> :warning: It goes without saying that classes who participate in the `Diamond` game have to inherit `Diamond(...)` - even if they inherit from only one class.
+
+For the library, a class implementing another without going through the `Diamond` process is just a block, like a single class, that cannot be separated or reorganized.
 
 ### Abstraction
 

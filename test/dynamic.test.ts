@@ -1,4 +1,4 @@
-import Diamond from '../src'
+import Diamond from '..'
 
 class A extends Diamond() {
 	method(x: number) {

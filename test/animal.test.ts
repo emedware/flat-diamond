@@ -1,4 +1,4 @@
-import D from '../src'
+import D from '..'
 import { log, logs } from './logger'
 
 class Animal extends D() {
