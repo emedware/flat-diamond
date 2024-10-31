@@ -12,6 +12,7 @@ class X1 extends D(A2, B2) {}
 class X2 extends D(C2, D2) {}
 
 test('instanceOf', () => {
+	//expect(new X2() instanceof D1).toBe(true)
 	expect(instanceOf(new X1(), X1)).toBe(true)
 	expect(instanceOf(new X1(), X2)).toBe(false)
 	expect(instanceOf(new X2(), X1)).toBe(false)

@@ -59,7 +59,11 @@ type HasBases<TBases extends Ctor[]> = TBases extends []
  */
 function* linearLeg(base: Ctor): IterableIterator<Ctor> {
 	yield base
-	for (let ctor = base; ctor !== Object; ctor = Object.getPrototypeOf(ctor.prototype).constructor)
+	for (
+		let ctor = base;
+		ctor !== Object && !allFLegs.has(ctor);
+		ctor = Object.getPrototypeOf(ctor.prototype).constructor
+	)
 		yield ctor
 }
 
@@ -68,11 +72,61 @@ function* linearLeg(base: Ctor): IterableIterator<Ctor> {
  */
 function bottomLeg(ctor: Ctor) {
 	let last: Ctor = null
-	for (; ctor !== Object; ctor = Object.getPrototypeOf(ctor.prototype).constructor) last = ctor
+	for (; ctor !== Object; ctor = Object.getPrototypeOf(ctor.prototype).constructor) {
+		if (allFLegs.has(ctor)) return ctor // TOKILL: for prototype trial
+		last = ctor
+	}
 	return last
 }
 function fLegs(ctor: Ctor) {
 	return allFLegs.get(bottomLeg(ctor))
+}
+
+/**
+ * Returns the next property descriptor in the FLeg for a property
+ * @param ctor The constructor whose FLeg is being searched
+ * @param name The name of the property
+ * @param diamond The calling diamond
+ * @returns
+ */
+function nextInFLeg(ctor: Ctor, name: PropertyKey, diamond: Ctor) {
+	const fLeg = fLegs(ctor)
+	let ndx = /*bottomLeg(ctor) === Diamond.prototype
+				? -1
+				: */ fLeg.findIndex((base) => bottomLeg(base) === diamond)
+	// When you don't find one descendant who is "you" [`Diamond` = "my Diamond"], then you are the first ancestor
+	// In this case, you should initiate the index to `-1` so that `++ndx` will begin at 0
+	// (Had to be commented as this "two wrongs make a right" is quite unexpected, even at writing time)
+	let rv: PropertyDescriptor
+	do
+		for (const uniLeg of linearLeg(fLeg[++ndx]))
+			if (!uniLeg) return
+			else if ((rv = Object.getOwnPropertyDescriptor(uniLeg.prototype, name))) break
+	while (!rv && ndx < fLeg.length)
+	return rv
+}
+const diamondHandler: ProxyHandler<Ctor> = {
+	get(target, p, receiver) {
+		if (p === Symbol.hasInstance) return () => false
+		const pd = nextInFLeg(receiver.constructor, p, target)
+		return pd && (pd.value || pd.get.call(receiver))
+	},
+	set(target, p, v, receiver) {
+		const pd = nextInFLeg(receiver.constructor, p, target)
+		if (!pd || pd.writable)
+			Object.defineProperty(receiver, p, {
+				value: v,
+				writable: true,
+				enumerable: true,
+				configurable: true
+			})
+		else if (pd && pd.set) pd.set.call(receiver, v)
+		else return false
+		return true
+	},
+	getPrototypeOf(target) {
+		return Object
+	}
 }
 
 type BuildingStrategy = Map<Ctor, Ctor[]>
@@ -88,14 +142,6 @@ export default function Diamond<TBases extends Ctor[]>(
 ): Ctor<HasBases<TBases>> {
 	const bases: Ctor[] = []
 	for (const base of baseClasses) {
-		/**
-		 * [ X, A ] with :
-		 * X - Y \
-		 *        I - J
-		 * A - B /
-		 * becomes:
-		 * X - Y - A - B - I - J
-		 */
 		let fLeg = [base, ...(fLegs(base) || [])]
 		let iBases = 0,
 			iFLeg: number
@@ -150,6 +196,9 @@ export default function Diamond<TBases extends Ctor[]>(
 				buildingDiamond = null
 			}
 		}
+		/* TODO: static [Symbol.hasInstance](obj: any) {
+			return instanceOf(obj, this)
+		}*/
 	}
 	allFLegs.set(Diamond, bases)
 	/**
@@ -160,43 +209,8 @@ export default function Diamond<TBases extends Ctor[]>(
 		nextResponsibility.unshift(base)
 		if (fLegs(base)) buildingStrategy.set(base, (nextResponsibility = []))
 	}
-	/**
-	 * Fills the diamond with all the properties of the bases
-	 */
-	const fLegged = new Set<string>()
-	for (const base of bases)
-		for (const uniLeg of linearLeg(base))
-			Object.getOwnPropertyNames(uniLeg.prototype).forEach((name) => fLegged.add(name))
 
-	function nextInFLeg(ctor: Ctor, name: string) {
-		const fLeg = fLegs(ctor)
-		let ndx = /*bottomLeg(ctor) === Diamond.prototype
-				? -1
-				: */ fLeg.findIndex((base) => bottomLeg(base) === Diamond)
-		// When you don't find one descendant who is "you" [`Diamond` = "my Diamond"], then you are the first ancestor
-		// In this case, you should initiate the index to `-1` so that `++ndx` will begin at 0
-		// (Had to be commented as this "two wrongs make a right" is quite unexpected, even at writing time)
-		let rv: PropertyDescriptor
-		do
-			for (const uniLeg of linearLeg(fLeg[++ndx]))
-				if ((rv = Object.getOwnPropertyDescriptor(uniLeg.prototype, name))) break
-		while (!rv && ndx < fLeg.length)
-		return rv
-	}
-	for (const name of fLegged)
-		if (name !== 'constructor') {
-			Object.defineProperty(Diamond.prototype, name, {
-				get() {
-					const pd = nextInFLeg(this.constructor, name)
-					return pd && (pd.value || pd.get.call(this))
-				},
-				set(v: any) {
-					const pd = nextInFLeg(this.constructor, name)
-					if (!pd || pd.writable) this[name] = v
-					if (pd && pd.set) pd.set.call(this, v)
-				}
-			})
-		}
+	Object.setPrototypeOf(Diamond.prototype, new Proxy(Diamond, diamondHandler))
 
 	return <new (...args: any[]) => HasBases<TBases>>(<unknown>Diamond)
 }

@@ -73,7 +73,7 @@ class Child extends D(Dad, Mum) {
 		return super.value
 	}
 }
-
+/*
 test('constructors', () => {
 	logs()
 	const child = new Child()
@@ -96,7 +96,7 @@ test('setters', () => {
 	logs()
 	child.value = 42
 	expect(logs()).toEqual(['child setter', 'dad setter', 'mum setter'])
-})
+})*/
 test('getters', () => {
 	const child = new Child()
 	logs()

@@ -16,6 +16,10 @@
 		"test": "jest",
 		"test:coverage": "jest --coverage"
 	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/eddow/flat-diamond.git"
+	},
 	"author": "François Marie <eeddow@gmail.com>",
 	"license": "GPL-3.0-only",
 	"dependencies": {},

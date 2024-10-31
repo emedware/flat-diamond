@@ -1,3 +1,5 @@
+[![view on npm](https://badgen.net/npm/v/flat-diamond)](https://www.npmjs.org/package/flat-diamond)
+
 # Flat Diamond
 
 Multiple inheritance has always has been a topic, if not a debate.
@@ -9,8 +11,8 @@ Single inheritance works as such :
 Existing inheritance: `A - B - C`.
 When writing `class X extends A`, we find the inheritance `X - A - B - C`
 
-Flattened inheritance: `X - Y - I - J` and `A - B - I - J`.
-When writing `class O extends X, A`, we find the flat legacy `O - X - Y - A - B - I - J`
+Flattened inheritance: `X - I` and `A - I`.
+When writing `class O extends X, A`, we find the flat legacy `O - X - A - I`
 
 Flattening operation for `[ X, A ]`
 
@@ -18,9 +20,11 @@ Flattening operation for `[ X, A ]`
 X - Y \
        I - J
 A - B /
+```
 
 becomes:
 
+```
 X - Y - A - B - I - J
 ```
 

@@ -1,6 +1,6 @@
 import Diamond from '..'
 
-class A extends Diamond() {
+class A {
 	method(x: number) {
 		return x + 1
 	}
@@ -39,4 +39,9 @@ test('dynamic diamond', () => {
 		return x + 42
 	}
 	expect(d.method(0)).toBe(46)
+	expect(() => (d as any).unexpected()).toThrow()
+	;(B.prototype as any).unexpected = function (this: B) {
+		return 202
+	}
+	expect((d as any).unexpected()).toBe(202)
 })
