@@ -1,4 +1,5 @@
 import Diamond from './diamond'
 export default Diamond
 export * from './helpers'
-export { Protect } from './protect'
+export * from './protect'
+export * from './types'

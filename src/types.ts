@@ -1,8 +1,8 @@
 /**
  * The type of the constructor of an object.
  */
-type Ctor<Class = any> = abstract new (...params: any[]) => Class
-type Newable<Class = any> = new (...args: any[]) => Class
+export type Ctor<Class = any> = abstract new (...params: any[]) => Class
+export type Newable<Class = any> = new (...args: any[]) => Class
 
 // Here, much black magic is kept in comments for research purpose. The "OmitNonAbstract" type has not yet been found.
 /**
@@ -47,7 +47,7 @@ type Both<A, B> = {
  * Problem being, if A and B extend an abstract C who has an abstract C.m, and B implements it,
  * Then, B & A will be considered as implementing it while A & B will be considered abstract
  */
-type HasBases<TBases extends Ctor[]> = TBases extends []
+export type HasBases<TBases extends Ctor[]> = TBases extends []
 	? object
 	: TBases extends [infer TBase, ...infer TRest]
 		? TBase extends Ctor
@@ -57,10 +57,4 @@ type HasBases<TBases extends Ctor[]> = TBases extends []
 			: never
 		: never
 
-type BuildingStrategy = Map<Ctor, Ctor[]>
-type KeySet<Key extends PropertyKey = PropertyKey> = Record<Key, true>
-type Protected<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]> = Newable<
-	Omit<InstanceType<TBase>, Keys[number]>
-> & {
-	privatePart(obj: InstanceType<TBase>): InstanceType<TBase> | undefined
-}
+export type KeySet<Key extends PropertyKey = PropertyKey> = Record<Key, true>

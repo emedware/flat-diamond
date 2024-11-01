@@ -1,5 +1,7 @@
+import { Ctor, HasBases } from './types'
 import { allFLegs, bottomLeg, fLegs, nextInFLeg, temporaryBuiltObjects } from './utils'
 
+type BuildingStrategy = Map<Ctor, Ctor[]>
 let buildingDiamond: {
 	built: object
 	strategy: BuildingStrategy

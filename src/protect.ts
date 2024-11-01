@@ -1,13 +1,19 @@
 import Diamond, { diamondHandler } from './diamond'
 import { constructedObject } from './helpers'
+import { Ctor, KeySet, Newable } from './types'
 import { allFLegs, bottomLeg, fLegs, nextInLine } from './utils'
 
 const publicPart = (x: Ctor): Ctor => Object.getPrototypeOf(Object.getPrototypeOf(x))
 
+export type Prutected<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]> = Newable<
+	Omit<InstanceType<TBase>, Keys[number]>
+> & {
+	privatePart(obj: InstanceType<TBase>): InstanceType<TBase> | undefined
+}
 export function Protect<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]>(
 	base: TBase,
 	properties: Keys
-): Protected<TBase, Keys> {
+): Prutected<TBase, Keys> {
 	const protectedProperties: KeySet = properties.reduce(
 			(acc, p) => ({ ...acc, [p]: true }) as KeySet,
 			{}

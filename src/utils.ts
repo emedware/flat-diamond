@@ -1,3 +1,5 @@
+import { Ctor } from './types'
+
 /**
  * Gives all the classes from the base up to just before Object
  * Note: In "uni-legacy", the parent of Diamond is Object

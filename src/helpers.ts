@@ -1,3 +1,4 @@
+import { Ctor } from './types'
 import { fLegs, temporaryBuiltObjects } from './utils'
 
 /**

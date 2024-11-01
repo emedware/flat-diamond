@@ -120,7 +120,7 @@ Cool. It's working too... Keep on rocking! As the technology used is a `Proxy`, 
 
 ### Order conflicts
 
-Lazily resolved by stating that the argument order of the function `Diamond(...)` is _consultative_
+Resolved by stating that the argument order of the function `Diamond(...)` is _consultative_
 
 ```ts
 class X1 { ... }
@@ -132,6 +132,8 @@ class D2 extends D(X1, X3, D1, X4, X2)
 ```
 
 Here, the flat legacy od `D2` will be `D1 - X1 - X3 - X2 - X4`. The fact that `D1` specifies it inherits from `X1` is promised to be kept, the order in the arguments is surely going to happen if the situation is not too complex.
+
+A real order conflict would imply circular reference who is any impossible.
 
 ### Dealing with non-`Diamond`-ed classes
 
@@ -213,7 +215,7 @@ import D, { constructedObject } from 'flat-diamond'
 
 # Protection
 
-Another big deal of diamond inheritance is variable conflicts.
+Another big deal of diamond inheritance is field conflicts.
 
 ## Easy case
 
@@ -223,7 +225,7 @@ Don't make field conflicts. Just don't.
 
 ## Yes, but it's a library I don't write
 
-Here it is tricky, and that's where _protection_ comes in. Let's speak about protection without speaking of diamond - and, if you wish, the protection works without the need of involving `Diamond`.
+Here it is tricky, and that's where _protection_ comes in. Let's speak about protection without speaking of diamond - and, if you wish, the protection works without the need of involving `Diamond`. (though it is also completely integrated)
 
 Let's say we want a `DuckCourier` to implement `Plane`, and end up with a conflict of `wingSpan` (the one of the duck and the one of the device strapped on him, the `Plane` one)
 
@@ -243,7 +245,7 @@ When a protected class is implemented, `this` (so, here, a `DuckCourier`) will b
 
 Because of prototyping, `Private<Plane>` has access to all the functionalities of `DuckCourier` (and therefore of `Plane`) while never interfering with `DuckCourier::wingSpan`. Also, having several protected class in the legacy list will only create several "heads" who will share a prototype.
 
-`DuckCourier` on another hand, _can_ interfere with `Plane::wingSpan` if needed thanks to the `privatePart` exposed by the protected class.
+`DuckCourier` on another hand, _can_ interfere with `Plane::wingSpan` if needed thanks to the `privatePart` exposed by the `Protected` class.
 
 ```ts
 import { Protect } from 'flat-diamond'
@@ -261,6 +263,12 @@ class DuckCourier extends ProtectedPlane {
 	}
 }
 ```
+
+## Limitations
+
+Again, the object exposed in the constructor won't be the same as the one faces from inside the protected object' methods/accessors
+
+For now, only the fields can be protected, not the methods
 
 # Participation
 
