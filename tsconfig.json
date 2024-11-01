@@ -1,15 +1,19 @@
 {
 	"compilerOptions": {
-		"module": "commonjs",
+		"moduleResolution": "Node",
+		"target": "ESNext",
+		"module": "ESNext",
 		"declaration": false,
-		"removeComments": true,
-		"allowSyntheticDefaultImports": true,
-		"target": "ES2021",
-		"incremental": true,
-		"skipLibCheck": true,
-		"strictNullChecks": false,
-		"noImplicitAny": true,
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": false,
+		"forceConsistentCasingInFileNames": true,
+		"strictNullChecks": true,
 		"strictBindCallApply": false,
-		"forceConsistentCasingInFileNames": false
+		"baseUrl": ".",
+		"paths": {
+			"tslib": ["./node_modules/tslib/tslib.d.ts"],
+			"~/*": ["./src/*"]
+		}
 	}
 }

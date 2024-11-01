@@ -1,4 +1,4 @@
-import Diamond from '..'
+import Diamond from '../src'
 import { log, logs } from './logger'
 
 abstract class A {

@@ -1,4 +1,4 @@
-import D, { constructedObject } from '..'
+import D, { constructedObject } from '../src'
 import { log, logs } from './logger'
 
 class End1 {

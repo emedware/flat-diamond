@@ -1,4 +1,4 @@
-import Diamond from '..'
+import Diamond from '../src'
 
 class A {
 	method(x: number) {

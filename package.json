@@ -2,6 +2,7 @@
 	"name": "flat-diamond",
 	"version": "1.0.2",
 	"description": "TypeScript diamond inheritance",
+	"type": "module",
 	"keywords": [
 		"typescript",
 		"multiple inheritance",
@@ -11,7 +12,8 @@
 		"class inheritance",
 		"oop"
 	],
-	"main": "index.ts",
+	"types": "src/types.d.ts",
+	"main": "src/index.ts",
 	"scripts": {
 		"test": "jest",
 		"test:coverage": "jest --coverage",
@@ -32,7 +34,7 @@
 		"jest": "^29.7.0",
 		"prettier": "^3.3.3",
 		"ts-jest": "^29.1.2",
-		"typescript": "^5.3.3",
+		"typescript": "^5.4.5",
 		"typescript-eslint": "^8.12.2"
 	}
 }

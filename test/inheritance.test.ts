@@ -1,4 +1,4 @@
-import D from '..'
+import D from '../src'
 import { log, logs } from './logger'
 
 abstract class Parent {
