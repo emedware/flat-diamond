@@ -17,7 +17,7 @@
 	"scripts": {
 		"test": "jest",
 		"test:coverage": "jest --coverage",
-		"lint": "eslint ./index.ts",
+		"lint": "eslint src/**/*.ts",
 		"prepack": "npm run lint && npm run test"
 	},
 	"repository": {

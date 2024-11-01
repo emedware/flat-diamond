@@ -1,13 +1,13 @@
-const tseslint = require('typescript-eslint')
+const tsEsLint = require('typescript-eslint')
 
 module.exports = [
 	{
-		files: ['**/*.ts'],
+		files: ['src/**/*.ts'],
 		plugins: {
-			'@typescript-eslint': tseslint.plugin
+			'@typescript-eslint': tsEsLint.plugin
 		},
 		languageOptions: {
-			parser: tseslint.parser,
+			parser: tsEsLint.parser,
 			parserOptions: {
 				projectService: true,
 				tsconfigRootDir: __dirname
