@@ -6,8 +6,8 @@ import { fLegs, temporaryBuiltObjects } from './utils'
  * @param obj `this` - the object being constructed by this constructor
  * @returns
  */
-export function constructedObject(obj: object) {
-	return temporaryBuiltObjects.get(obj) || obj
+export function constructedObject<Class extends object>(obj: Class): Class {
+	return (temporaryBuiltObjects.get(obj) as Class) || obj
 }
 
 /**

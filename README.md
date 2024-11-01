@@ -209,8 +209,60 @@ import D, { constructedObject } from 'flat-diamond'
 ```
 
 > Note: There is no need to modify it directly, all the properties initialized on the temporary object are going to be transposed on it
+> Note: `constructedObject(this)` will return a relevant value _only_ in classes extending `Diamond(...)` after `super(...)`
 
-## Participation
+# Protection
+
+Another big deal of diamond inheritance is variable conflicts.
+
+## Easy case
+
+You write all the classes and, when remembering a `wingSpan`, you know that a plane is not a duck. You either have a plane wit a duck inside (property) or a duck that imitates a plane - but you don't confuse your `wingSpan`s.
+
+Don't make field conflicts. Just don't.
+
+## Yes, but it's a library I don't write
+
+Here it is tricky, and that's where _protection_ comes in. Let's speak about protection without speaking of diamond - and, if you wish, the protection works without the need of involving `Diamond`.
+
+Let's say we want a `DuckCourier` to implement `Plane`, and end up with a conflict of `wingSpan` (the one of the duck and the one of the device strapped on him, the `Plane` one)
+
+A pure and simple `class DuckCourier extends Plane` would have a field conflict. So, instead, protection will be used :
+
+```ts
+import { Protect } from 'flat-diamond'
+
+class DuckCourier extends Protect(Plane, ['wingSpan']) { ... }
+```
+
+As simple as that, methods (as well as accessors) of `Plane` and `DuckCourier` will access two different values when accessing `this.wingSpan`
+
+## But ... How ? And, how can I ...
+
+When a protected class is implemented, `this` (so, here, a `DuckCourier`) will be used as the prototype for a `Private<Plane>`. A Proxy is added between `Protected` and `Plane` to manage who is `this` in method calls (either `DuckCourier` or `Private<Plane>`) - et voilà!
+
+Because of prototyping, `Private<Plane>` has access to all the functionalities of `DuckCourier` (and therefore of `Plane`) while never interfering with `DuckCourier::wingSpan`. Also, having several protected class in the legacy list will only create several "heads" who will share a prototype.
+
+`DuckCourier` on another hand, _can_ interfere with `Plane::wingSpan` if needed thanks to the `privatePart` exposed by the protected class.
+
+```ts
+import { Protect } from 'flat-diamond'
+
+class Plane {
+	wingSpan: number = 200
+}
+
+const ProtectedPlane = Protect(Plane, ['wingSpan'])
+
+class DuckCourier extends ProtectedPlane {
+	wingSpan: number = 80
+	get isDeviceSafe(): boolean {
+		return ProtectedPlane.privatePart(this).wingSpan > 2 * this.wingSpan
+	}
+}
+```
+
+# Participation
 
 The best (even if not only) way to report a bug is to PR a failing unit test.
 

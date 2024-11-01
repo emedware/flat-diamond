@@ -1,6 +1,6 @@
 import Diamond, { diamondHandler } from './diamond'
 import { constructedObject } from './helpers'
-import { allFLegs, bottomLeg, nextInLine } from './utils'
+import { allFLegs, bottomLeg, fLegs, nextInLine } from './utils'
 
 const publicPart = (x: Ctor): Ctor => Object.getPrototypeOf(Object.getPrototypeOf(x))
 
@@ -9,17 +9,41 @@ export function Protect<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 	properties: Keys
 ): Protected<TBase, Keys> {
 	const protectedProperties: KeySet = properties.reduce(
-		(acc, p) => ({ ...acc, [p]: true }) as KeySet,
-		{}
-	)
+			(acc, p) => ({ ...acc, [p]: true }) as KeySet,
+			{}
+		),
+		initPropertiesBasket: PropertyDescriptorMap[] = []
+	/**
+	 * In order to integrate well in diamonds, we need to be a diamond
+	 * When we create a diamond between the Protected and the base, the private properties of the base *have to*
+	 * be collected before the diamond propagate them to the `constructedObject`
+	 */
+	abstract class PropertyCollector extends base {
+		constructor(...args: any[]) {
+			super(...args)
+			const init = initPropertiesBasket[0],
+				allProps = Object.getOwnPropertyDescriptors(this)
+			for (const p in protectedProperties)
+				if (p in allProps) {
+					init[p] = allProps[p]
+					delete this[p]
+				}
+		}
+	}
 	const privates = new WeakMap<Protected, TBase>()
-	const diamond = Diamond(base) as TBase
+	const diamond = fLegs(base) ? PropertyCollector : (Diamond(PropertyCollector) as TBase)
 	class Protected extends (diamond as any) {
 		static privatePart(obj: TBase): TBase | undefined {
 			return privates.get(obj)
 		}
 		constructor(...args: any[]) {
-			super(...args)
+			const init: PropertyDescriptorMap = {}
+			initPropertiesBasket.unshift(init)
+			try {
+				super(...args)
+			} finally {
+				initPropertiesBasket.shift()
+			}
 			const actThis = constructedObject(this)
 			privates.set(
 				actThis,
@@ -36,7 +60,8 @@ export function Protect<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 							return true
 						},
 						getPrototypeOf: (target) => target
-					})
+					}),
+					init
 				)
 			)
 		}
@@ -47,7 +72,7 @@ export function Protect<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			: privates.get(publicPart(receiver)) === receiver
 				? 'private'
 				: 'error'
-		// If it's not tested, it means all the tests pass: this should never happen
+		// If it's not test-covered, it means all the tests pass: this should never happen
 		if (domain === 'error') throw new Error('Invalid domain')
 		return {
 			domain,
@@ -136,7 +161,6 @@ export function Protect<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			})
 			return true
 		},
-		//getPrototypeOf: (target): any => fakeCtor.prototype
 		getPrototypeOf: (target) => diamond.prototype
 	})
 	Object.setPrototypeOf(Protected.prototype, fakeCtor.prototype)

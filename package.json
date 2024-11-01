@@ -12,7 +12,6 @@
 		"class inheritance",
 		"oop"
 	],
-	"types": "src/types.d.ts",
 	"main": "src/index.ts",
 	"scripts": {
 		"test": "jest",
