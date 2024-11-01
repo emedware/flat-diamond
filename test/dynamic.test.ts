@@ -29,6 +29,7 @@ class D extends Diamond(B, C) {
 }
 
 test('dynamic diamond', () => {
+	// <a name="dynamic-diamond"></a>
 	const d = new D()
 	expect(d.method(0)).toBe(10)
 	A.prototype.method = function (x) {

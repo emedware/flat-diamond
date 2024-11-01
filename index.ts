@@ -2,20 +2,23 @@
  * The type of the constructor of an object.
  */
 type Ctor<Class = any> = abstract new (...params: any[]) => Class
+
+// Here, much black magic is kept in comments for research purpose. The "OmitNonAbstract" type has not yet been found.
 /**
  * Black magic.
  * type `U = X | Y | Z` => `I = X & Y & Z`
- */
+ */ /*
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
 	? I
-	: never
-
+	: never*/
+/*
 type NoNever<T> = Pick<
 	T,
 	{
 		[K in keyof T]: T[K] extends never ? never : K
 	}[keyof T]
->
+>*/
+/*
 type Both<A, B> = {
 	[K in keyof A]: K extends keyof B
 		? A[K] extends B[K]
@@ -26,7 +29,7 @@ type Both<A, B> = {
 		: A[K]
 } & NoNever<{
 	[K in keyof B]: K extends keyof A ? never : B[K]
-}>
+}>*/
 
 /**
  * Specifies that the object is an intersection of all of the bases
@@ -73,13 +76,23 @@ function* linearLeg(base: Ctor): IterableIterator<Ctor> {
 function bottomLeg(ctor: Ctor) {
 	let last: Ctor = null
 	for (; ctor !== Object; ctor = Object.getPrototypeOf(ctor.prototype).constructor) {
-		if (allFLegs.has(ctor)) return ctor // TOKILL: for prototype trial
+		if (allFLegs.has(ctor)) return ctor
 		last = ctor
 	}
 	return last
 }
 function fLegs(ctor: Ctor) {
 	return allFLegs.get(bottomLeg(ctor))
+}
+
+class LegacyConsistencyError extends Error {
+	constructor(
+		public diamond: Ctor,
+		public base: Ctor
+	) {
+		super()
+	}
+	name = 'LegacyConsistencyError'
 }
 
 /**
@@ -91,17 +104,20 @@ function fLegs(ctor: Ctor) {
  */
 function nextInFLeg(ctor: Ctor, name: PropertyKey, diamond: Ctor) {
 	const fLeg = fLegs(ctor)
-	let ndx = /*bottomLeg(ctor) === Diamond.prototype
-				? -1
-				: */ fLeg.findIndex((base) => bottomLeg(base) === diamond)
+	let ndx = bottomLeg(ctor) === diamond ? 0 : -1
+	if (ndx < 0) {
+		ndx = fLeg.findIndex((base) => bottomLeg(base) === diamond) + 1
+		if (ndx <= 0) throw new LegacyConsistencyError(diamond, ctor)
+	}
 	// When you don't find one descendant who is "you" [`Diamond` = "my Diamond"], then you are the first ancestor
 	// In this case, you should initiate the index to `-1` so that `++ndx` will begin at 0
 	// (Had to be commented as this "two wrongs make a right" is quite unexpected, even at writing time)
+	// Note: the case where `diamond` is neither the root, neither in the fLeg, is not taken into account
+	// as this is `flat-diamond`-only dependant and should raise a test error
 	let rv: PropertyDescriptor
 	do
-		for (const uniLeg of linearLeg(fLeg[++ndx]))
-			if (!uniLeg) return
-			else if ((rv = Object.getOwnPropertyDescriptor(uniLeg.prototype, name))) break
+		for (const uniLeg of linearLeg(fLeg[ndx++]))
+			if ((rv = Object.getOwnPropertyDescriptor(uniLeg.prototype, name))) break
 	while (!rv && ndx < fLeg.length)
 	return rv
 }
@@ -196,9 +212,13 @@ export default function Diamond<TBases extends Ctor[]>(
 				buildingDiamond = null
 			}
 		}
-		/* TODO: static [Symbol.hasInstance](obj: any) {
-			return instanceOf(obj, this)
-		}*/
+		static [Symbol.hasInstance](obj: any) {
+			if (!obj || typeof obj !== 'object') return false
+			const objBottom = bottomLeg(obj.constructor)
+			if (objBottom === Diamond) return true
+			const fLeg = allFLegs.get(objBottom)
+			return fLeg && fLeg.some((base) => bottomLeg(base) === Diamond)
+		}
 	}
 	allFLegs.set(Diamond, bases)
 	/**

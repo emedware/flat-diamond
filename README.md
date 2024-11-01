@@ -72,7 +72,7 @@ No, and even well constructed! In the previous example (`C - A - B - X`), invoki
 
 ## But ... How ?
 
-The class created by the library (`Diamond(A, B)`) will implement all the properties of all the classes appearing in the flattened legacy as accessors. It will then use the stored legacy (in the class created by the library, not yours) to retrieve the value from the good prototype.
+The class created by the library (`Diamond(A, B)`) has a `Proxy` `prototype` (understand who can) who allow accessing the whole legacy of an object, from its constructor 'flat legacy'.
 
 ### There is no `get constructor()`
 
@@ -105,7 +105,9 @@ We can of course `extend Diamond(A, B, C, D, E, ...theRest)`.
 
 ### `instanceof` does not work anymore!
 
-Breathe and import it.
+It still works. Well, it indeed works - but only if the class being tested is a `Diamond` one (if it inherits from `Diamond(...)` or if one of its direct ancestor does).
+
+If not, there is a helper function for the super-generic case.
 
 ```ts
 import Diamond, { instanceOf } from 'flat-diamond'
@@ -113,7 +115,7 @@ import Diamond, { instanceOf } from 'flat-diamond'
 
 ### But I modify my prototypes dynamically...
 
-Cool. It's working too... Keep on rocking!
+Cool. It's working too... Keep on rocking! As the technology used is a `Proxy`, you can even add a property in a sub-sub-class' prototype, [it will be found](./test/dynamic.test.ts#dynamic-diamond).
 
 ### Order conflicts
 

@@ -14,20 +14,25 @@
 	"main": "index.ts",
 	"scripts": {
 		"test": "jest",
-		"test:coverage": "jest --coverage"
+		"test:coverage": "jest --coverage",
+		"lint": "eslint ./index.ts",
+		"prepack": "npm run lint && npm run test"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/eddow/flat-diamond.git"
+		"url": "git+https://github.com/emedware/flat-diamond.git"
 	},
 	"author": "François Marie <eeddow@gmail.com>",
 	"license": "GPL-3.0-only",
-	"dependencies": {},
 	"devDependencies": {
-		"typescript": "^5.3.3",
-		"ts-jest": "^29.1.2",
-		"jest": "^29.7.0",
 		"@types/jest": "^29.5.12",
-		"prettier": "^3.3.3"
+		"@typescript-eslint/eslint-plugin": "^8.12.2",
+		"@typescript-eslint/parser": "^8.12.2",
+		"eslint": "^9.13.0",
+		"jest": "^29.7.0",
+		"prettier": "^3.3.3",
+		"ts-jest": "^29.1.2",
+		"typescript": "^5.3.3",
+		"typescript-eslint": "^8.12.2"
 	}
 }
