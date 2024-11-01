@@ -1,9 +1,36 @@
-import { allFLegs, bottomLeg, diamondHandler, fLegs, temporaryBuiltObjects } from './utils'
+import { allFLegs, bottomLeg, fLegs, nextInFLeg, temporaryBuiltObjects } from './utils'
 
 let buildingDiamond: {
 	built: object
 	strategy: BuildingStrategy
 } | null = null
+
+export const diamondHandler: {
+	getPrototypeOf(target: Ctor): Ctor
+	get(target: Ctor, p: PropertyKey, receiver: Ctor): any
+	set(target: Ctor, p: PropertyKey, v: any, receiver: Ctor): boolean
+} & ProxyHandler<Ctor> = {
+	get(target, p, receiver) {
+		const pd = nextInFLeg(receiver.constructor, p, target)
+		return pd && ('value' in pd ? pd.value : 'get' in pd ? pd.get!.call(receiver) : undefined)
+	},
+	set(target, p, v, receiver) {
+		const pd = nextInFLeg(receiver.constructor, p, target)
+		if (!pd || pd.writable)
+			Object.defineProperty(receiver, p, {
+				value: v,
+				writable: true,
+				enumerable: true,
+				configurable: true
+			})
+		else if (pd && pd.set) pd.set.call(receiver, v)
+		else return false
+		return true
+	},
+	getPrototypeOf(target) {
+		return Object
+	}
+}
 
 export default function Diamond<TBases extends Ctor[]>(
 	...baseClasses: TBases

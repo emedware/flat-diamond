@@ -1,13 +1,3 @@
-export class LegacyConsistencyError extends Error {
-	constructor(
-		public diamond: Ctor,
-		public base: Ctor
-	) {
-		super()
-	}
-	name = 'LegacyConsistencyError'
-}
-
 /**
  * Gives all the classes from the base up to just before Object
  * Note: In "uni-legacy", the parent of Diamond is Object
@@ -53,40 +43,17 @@ export function fLegs(ctor: Ctor) {
  * @returns
  */
 export function nextInFLeg(ctor: Ctor, name: PropertyKey, diamond: Ctor) {
-	const fLeg = fLegs(ctor)!
+	const fLeg = fLegs(ctor)
+	if (!fLeg) throw new Error('Inconsistent diamond hierarchy')
 	let ndx = bottomLeg(ctor) === diamond ? 0 : -1
 	if (ndx < 0) {
 		ndx = fLeg.findIndex((base) => bottomLeg(base) === diamond) + 1
-		if (ndx <= 0) throw new LegacyConsistencyError(diamond, ctor)
+		if (ndx <= 0) throw new Error('Inconsistent diamond hierarchy')
 	}
 	let rv: PropertyDescriptor | undefined
 	do rv = nextInLine(fLeg[ndx++], name)
 	while (!rv && ndx < fLeg.length)
 	return rv
-}
-
-export const diamondHandler: ProxyHandler<Ctor> = {
-	get(target, p, receiver) {
-		if (p === Symbol.hasInstance) return () => false
-		const pd = nextInFLeg(receiver.constructor, p, target)
-		return pd && ('value' in pd ? pd.value : 'get' in pd ? pd.get!.call(receiver) : undefined)
-	},
-	set(target, p, v, receiver) {
-		const pd = nextInFLeg(receiver.constructor, p, target)
-		if (!pd || pd.writable)
-			Object.defineProperty(receiver, p, {
-				value: v,
-				writable: true,
-				enumerable: true,
-				configurable: true
-			})
-		else if (pd && pd.set) pd.set.call(receiver, v)
-		else return false
-		return true
-	},
-	getPrototypeOf(target) {
-		return Object
-	}
 }
 
 export const temporaryBuiltObjects = new WeakMap<object, object>(),

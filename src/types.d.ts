@@ -2,6 +2,7 @@
  * The type of the constructor of an object.
  */
 type Ctor<Class = any> = abstract new (...params: any[]) => Class
+type Newable<Class = any> = new (...args: any[]) => Class
 
 // Here, much black magic is kept in comments for research purpose. The "OmitNonAbstract" type has not yet been found.
 /**
@@ -57,3 +58,9 @@ type HasBases<TBases extends Ctor[]> = TBases extends []
 		: never
 
 type BuildingStrategy = Map<Ctor, Ctor[]>
+type KeySet<Key extends PropertyKey = PropertyKey> = Record<Key, true>
+type Protected<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]> = Newable<
+	Omit<InstanceType<TBase>, Keys[number]>
+> & {
+	privatePart(obj: InstanceType<TBase>): InstanceType<TBase> | undefined
+}

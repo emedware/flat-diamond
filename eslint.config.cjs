@@ -22,8 +22,8 @@ module.exports = [
 			'lit-a11y/click-events-have-key-events': 'off',
 			'no-debugger': 'error',
 			'no-console': 'error',
-			semi: ['error', 'never'],
-			indent: ['error', 'tab']
+			indent: 'off',
+			semi: ['error', 'never']
 		}
 	}
 ]
