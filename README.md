@@ -1,4 +1,5 @@
 [![view on npm](https://badgen.net/npm/v/flat-diamond)](https://www.npmjs.org/package/flat-diamond)
+[![Node.js CI](https://github.com/emedware/flat-diamond/actions/workflows/node.js.yml/badge.svg)](https://github.com/emedware/flat-diamond/actions/workflows/node.js.yml)
 
 # Flat Diamond
 

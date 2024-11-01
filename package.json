@@ -1,7 +1,7 @@
 {
 	"name": "flat-diamond",
-	"version": "1.0.1",
-	"description": "typescript multiple inheritance",
+	"version": "1.0.2",
+	"description": "TypeScript diamond inheritance",
 	"keywords": [
 		"typescript",
 		"multiple inheritance",
