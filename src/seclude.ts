@@ -1,4 +1,4 @@
-import Diamond, { diamondHandler } from './diamond'
+import Diamond, { diamondHandler, hasInstanceManager } from './diamond'
 import { constructedObject } from './helpers'
 import { Ctor, KeySet, Newable } from './types'
 import { allFLegs, bottomLeg, fLegs, nextInLine } from './utils'
@@ -49,6 +49,11 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 		diamondSecluded = !fLegs(base),
 		// any: abstract -> newable
 		diamond = diamondSecluded ? (Diamond(PropertyCollector) as any) : PropertyCollector
+	// We make sure `Secluded(X).secluded(x) instanceof X`
+	if (diamondSecluded) {
+		Object.defineProperty(base, Symbol.hasInstance, { value: hasInstanceManager(base) })
+		//base[Symbol.hasInstance] = hasInstanceManager(base)
+	}
 	class GateKeeper extends (diamond as any) {
 		static secluded(obj: TBase): TBase | undefined {
 			return privates.get(obj)

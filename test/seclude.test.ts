@@ -67,6 +67,8 @@ test('leg-less', () => {
 	}
 
 	let t = testScenario(new Y(), P)
+	expect(t instanceof X).toBe(true)
+	expect(builtX! instanceof X).toBe(true)
 	expect(builtX).toBe(P.secluded(t))
 })
 
@@ -106,8 +108,12 @@ test('leg-half', () => {
 	class E extends Diamond(Y, P) {}
 
 	let t = testScenario(new D(), P)
+	expect(t instanceof X).toBe(true)
+	expect(builtX! instanceof X).toBe(true)
 	expect(builtX).toBe(P.secluded(t))
 	t = testScenario(new E(), P)
+	expect(t instanceof X).toBe(true)
+	expect(builtX! instanceof X).toBe(true)
 	expect(builtX).toBe(P.secluded(t))
 })
 

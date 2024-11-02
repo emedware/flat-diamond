@@ -247,7 +247,7 @@ As simple as that, methods (as well as accessors) of `Plane` and `DuckCourier` w
 
 ## But ... How ? And, how can I ...
 
-When a secluded class is implemented, `this` (so, here, a `DuckCourier`) will be used as the prototype for a `Secluded<Plane>`. A Proxy is added between `Secluded` and `Plane` to manage who is `this` in method calls (either `DuckCourier` or `Secluded<Plane>`) - et voilà!
+When a secluded class is implemented, the `Plane` instance prototype will be replaced by `this` (so, here, a `DuckCourier`). Some `Proxy` voodoo is juggled with to manage who is `this` in method calls (either `DuckCourier` or `Secluded<Plane>`) - et voilà!
 
 Because of prototyping, `Secluded<Plane>` has access to all the functionalities of `DuckCourier` (and therefore of `Plane`) while never interfering with `DuckCourier::wingSpan`. Also, having several secluded class in the legacy list will only create several "heads" who will share a prototype.
 

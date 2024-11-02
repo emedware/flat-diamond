@@ -34,6 +34,16 @@ export const diamondHandler: {
 	}
 }
 
+export function hasInstanceManager<Class extends Ctor>(cls: Class) {
+	return (obj: any) => {
+		if (!obj || typeof obj !== 'object') return false
+		const objBottom = bottomLeg(obj.constructor)
+		if (objBottom === cls) return true
+		const fLeg = allFLegs.get(objBottom)
+		return Boolean(fLeg && fLeg.some((base) => bottomLeg(base) === cls))
+	}
+}
+
 export default function Diamond<TBases extends Ctor[]>(
 	...baseClasses: TBases
 ): Newable<HasBases<TBases>> {
@@ -93,13 +103,7 @@ export default function Diamond<TBases extends Ctor[]>(
 				buildingDiamond = null
 			}
 		}
-		static [Symbol.hasInstance](obj: any) {
-			if (!obj || typeof obj !== 'object') return false
-			const objBottom = bottomLeg(obj.constructor)
-			if (objBottom === Diamond) return true
-			const fLeg = allFLegs.get(objBottom)
-			return fLeg && fLeg.some((base) => bottomLeg(base) === Diamond)
-		}
+		static [Symbol.hasInstance] = hasInstanceManager(Diamond)
 	}
 	allFLegs.set(Diamond, bases)
 	/**
