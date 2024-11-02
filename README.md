@@ -217,7 +217,7 @@ import D, { constructedObject } from 'flat-diamond'
 
 ### When the class is from a library
 
-Seclusion is your friend
+[Seclusion](#seclusion-and-construction) is your friend
 
 # Seclusion
 

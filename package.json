@@ -1,6 +1,6 @@
 {
 	"name": "flat-diamond",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"exports": {
 		".": {
 			"import": "./lib/esm.js",

@@ -45,10 +45,10 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 				}
 		}
 	}
-	const privates = new WeakMap<Secluded, TBase>(),
+	const privates = new WeakMap<GateKeeper, TBase>(),
 		diamondSecluded = !fLegs(base),
 		diamond = diamondSecluded ? (Diamond(PropertyCollector) as TBase) : PropertyCollector
-	class Secluded extends (diamond as any) {
+	class GateKeeper extends (diamond as any) {
 		static secluded(obj: TBase): TBase | undefined {
 			return privates.get(obj)
 		}
@@ -199,6 +199,6 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 		},
 		getPrototypeOf: (target) => diamond.prototype
 	})
-	Object.setPrototypeOf(Secluded.prototype, fakeCtor.prototype)
-	return Secluded as any
+	Object.setPrototypeOf(GateKeeper.prototype, fakeCtor.prototype)
+	return GateKeeper as any
 }
