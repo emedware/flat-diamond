@@ -51,7 +51,6 @@ class Duck extends D(FlyingAnimal, SwimmingAnimal, WalkingAnimal) {
 		return [...super.actions, 'quack']
 	}
 }
-class Beaver extends D(WalkingAnimal, SwimmingAnimal) {}
 
 beforeEach(() => {
 	logs() //make sure logs are cleared
@@ -62,7 +61,7 @@ test('inheritance', () => {
 	duck.doIt()
 	expect(logs()).toEqual(['KWAK', 'woosh', 'fshhh', 'picpoc', 'mniom'])
 
-	const beaver = new Beaver()
+	const beaver = new (D(WalkingAnimal, SwimmingAnimal))()
 	expect(beaver.actions).toEqual(['eat', 'sleep', 'swim', 'walk'])
 	beaver.doIt()
 	expect(logs()).toEqual(['picpoc', 'fshhh', 'mniom'])

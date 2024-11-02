@@ -1,6 +1,7 @@
 {
 	"name": "flat-diamond",
 	"version": "1.0.4",
+	"types": "./lib/index.d.ts",
 	"exports": {
 		".": {
 			"import": "./lib/esm.js",

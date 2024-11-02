@@ -152,7 +152,7 @@ For the library, a class implementing another without going through the `Diamond
 
 ### Abstraction
 
-`new Diamond(...)` is not possible as it is declared abstract (even if it has no abstract member) - This is so that it can inherit abstract classes!
+`new Diamond(...)` is possible even if it still has abstract members. Yes, it can inherit abstract classes though the typings are not always possible there, and some `//@ts-ignore` might be needed.
 
 The only problem still worked on is that if a class who has no implementation for an abstract method appears before another one who has an implementation, the method will be considered abstract (so the order of arguments for `Diamond(...)` matters here), even though a `//@ts-ignore` does the job.
 

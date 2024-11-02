@@ -29,7 +29,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 		initPropertiesBasket: BasketBall[] = []
 	/**
 	 * In order to integrate well in diamonds, we need to be a diamond
-	 * When we create a diamond between the Secludeded and the base, the private properties of the base *have to*
+	 * When we create a diamond between the Secluded and the base, the private properties of the base *have to*
 	 * be collected before the diamond propagate them to the `constructedObject`
 	 */
 	abstract class PropertyCollector extends base {
@@ -47,7 +47,8 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 	}
 	const privates = new WeakMap<GateKeeper, TBase>(),
 		diamondSecluded = !fLegs(base),
-		diamond = diamondSecluded ? (Diamond(PropertyCollector) as TBase) : PropertyCollector
+		// any: abstract -> newable
+		diamond = diamondSecluded ? (Diamond(PropertyCollector) as any) : PropertyCollector
 	class GateKeeper extends (diamond as any) {
 		static secluded(obj: TBase): TBase | undefined {
 			return privates.get(obj)

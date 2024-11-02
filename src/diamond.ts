@@ -1,4 +1,4 @@
-import { Ctor, HasBases } from './types'
+import { Ctor, HasBases, Newable } from './types'
 import { allFLegs, bottomLeg, fLegs, nextInFLeg, temporaryBuiltObjects } from './utils'
 
 type BuildingStrategy = Map<Ctor, Ctor[]>
@@ -36,7 +36,7 @@ export const diamondHandler: {
 
 export default function Diamond<TBases extends Ctor[]>(
 	...baseClasses: TBases
-): Ctor<HasBases<TBases>> {
+): Newable<HasBases<TBases>> {
 	const bases: Ctor[] = []
 	for (const base of baseClasses) {
 		let fLeg = [base, ...(fLegs(base) || [])]
