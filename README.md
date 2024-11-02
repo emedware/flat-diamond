@@ -186,7 +186,7 @@ D2(0)
         X2(2)
 ```
 
-#### Substitute for `this` stability
+## Substitute for `this` stability
 
 Because constructors cannot be invoked like other functions (it was simpler in older days), the objects have to be duplicated on construction.
 
@@ -199,7 +199,9 @@ For instance, one cannot use :
     }
 ```
 
-When constructing, the function `constructedObject` helps you retrieve the actual instance being constructed - this is the one you want to refer to.
+### When we are writing the class
+
+When constructing a class who inherit (directly or indirectly) a `Diamond`, the function `constructedObject` helps you retrieve the actual instance being constructed - this is the one you want to refer to.
 
 ```ts
 import D, { constructedObject } from 'flat-diamond'
@@ -212,6 +214,10 @@ import D, { constructedObject } from 'flat-diamond'
 
 > Note: There is no need to modify it directly, all the properties initialized on the temporary object are going to be transposed on it
 > Note: `constructedObject(this)` will return a relevant value _only_ in classes extending `Diamond(...)` after `super(...)`
+
+### When the class is from a library
+
+Seclusion is your friend
 
 # Seclusion
 
@@ -241,11 +247,11 @@ As simple as that, methods (as well as accessors) of `Plane` and `DuckCourier` w
 
 ## But ... How ? And, how can I ...
 
-When a secluded class is implemented, `this` (so, here, a `DuckCourier`) will be used as the prototype for a `Private<Plane>`. A Proxy is added between `Secluded` and `Plane` to manage who is `this` in method calls (either `DuckCourier` or `Private<Plane>`) - et voilà!
+When a secluded class is implemented, `this` (so, here, a `DuckCourier`) will be used as the prototype for a `Secluded<Plane>`. A Proxy is added between `Secluded` and `Plane` to manage who is `this` in method calls (either `DuckCourier` or `Secluded<Plane>`) - et voilà!
 
-Because of prototyping, `Private<Plane>` has access to all the functionalities of `DuckCourier` (and therefore of `Plane`) while never interfering with `DuckCourier::wingSpan`. Also, having several secluded class in the legacy list will only create several "heads" who will share a prototype.
+Because of prototyping, `Secluded<Plane>` has access to all the functionalities of `DuckCourier` (and therefore of `Plane`) while never interfering with `DuckCourier::wingSpan`. Also, having several secluded class in the legacy list will only create several "heads" who will share a prototype.
 
-`DuckCourier` on another hand, _can_ interfere with `Plane::wingSpan` if needed thanks to the `privatePart` exposed by the `Secluded` class.
+`DuckCourier` on another hand, _can_ interfere with `Plane::wingSpan` if needed thanks to the `secluded` exposed by the `Secluded` class.
 
 ```ts
 import { Seclude } from 'flat-diamond'
@@ -259,14 +265,16 @@ const SecludedPlane = Seclude(Plane, ['wingSpan'])
 class DuckCourier extends SecludedPlane {
 	wingSpan: number = 80
 	get isDeviceSafe(): boolean {
-		return SecludedPlane.privatePart(this).wingSpan > 2 * this.wingSpan
+		return SecludedPlane.secluded(this).wingSpan > 2 * this.wingSpan
 	}
 }
 ```
 
-## Limitations
+## Seclusion and construction
 
-Again, the object exposed in the constructor won't be the same as the one faces from inside the secluded object' methods/accessors
+The `Secluded<Plane>` will indeed be the object the `Plane` constructor built! If it was used in the references, it's perfect!
+
+## Limitations
 
 For now, only the fields can be secluded, not the methods
 

@@ -4,11 +4,19 @@ import { Ctor, KeySet, Newable } from './types'
 import { allFLegs, bottomLeg, fLegs, nextInLine } from './utils'
 
 const publicPart = (x: Ctor): Ctor => Object.getPrototypeOf(Object.getPrototypeOf(x))
-
+/**
+ * Internally used for communication between `PropertyCollector` and `Secluded`
+ * This is the "baal" `Secluded` send into the "basket" (stack in case a secluded class inherits another secluded class)
+ * and retrieve with its data fulfilled by `PropertyCollector`
+ */
+interface BasketBall {
+	privateProperties: PropertyDescriptorMap
+	initialObject?: any
+}
 export type Secluded<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]> = Newable<
 	Omit<InstanceType<TBase>, Keys[number]>
 > & {
-	privatePart(obj: InstanceType<TBase>): InstanceType<TBase> | undefined
+	secluded(obj: InstanceType<TBase>): InstanceType<TBase> | undefined
 }
 export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]>(
 	base: TBase,
@@ -18,7 +26,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			(acc, p) => ({ ...acc, [p]: true }) as KeySet,
 			{}
 		),
-		initPropertiesBasket: PropertyDescriptorMap[] = []
+		initPropertiesBasket: BasketBall[] = []
 	/**
 	 * In order to integrate well in diamonds, we need to be a diamond
 	 * When we create a diamond between the Secludeded and the base, the private properties of the base *have to*
@@ -27,49 +35,66 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 	abstract class PropertyCollector extends base {
 		constructor(...args: any[]) {
 			super(...args)
-			const init = initPropertiesBasket[0],
+			initPropertiesBasket[0].initialObject = this
+			const { privateProperties } = initPropertiesBasket[0],
 				allProps = Object.getOwnPropertyDescriptors(this)
 			for (const p in secludedProperties)
 				if (p in allProps) {
-					init[p] = allProps[p]
+					privateProperties[p] = allProps[p]
 					delete this[p]
 				}
 		}
 	}
-	const privates = new WeakMap<Secluded, TBase>()
-	const diamond = fLegs(base) ? PropertyCollector : (Diamond(PropertyCollector) as TBase)
+	const privates = new WeakMap<Secluded, TBase>(),
+		diamondSecluded = !fLegs(base),
+		diamond = diamondSecluded ? (Diamond(PropertyCollector) as TBase) : PropertyCollector
 	class Secluded extends (diamond as any) {
-		static privatePart(obj: TBase): TBase | undefined {
+		static secluded(obj: TBase): TBase | undefined {
 			return privates.get(obj)
 		}
 		constructor(...args: any[]) {
-			const init: PropertyDescriptorMap = {}
+			const init: BasketBall = { privateProperties: {} }
 			initPropertiesBasket.unshift(init)
 			try {
 				super(...args)
 			} finally {
 				initPropertiesBasket.shift()
 			}
-			const actThis = constructedObject(this)
-			privates.set(
-				actThis,
-				Object.create(
-					// This proxy is used to write public properties in the prototype (the public object)
-					new Proxy(actThis, {
-						set(target, p, value, receiver) {
-							Object.defineProperty(p in secludedProperties ? receiver : target, p, {
-								value,
-								writable: true,
-								enumerable: true,
-								configurable: true
-							})
-							return true
-						},
-						getPrototypeOf: (target) => target
-					}),
-					init
-				)
-			)
+			const actThis = constructedObject(this),
+				// This proxy is used to write public properties in the prototype (the public object)
+				protoProxy = new Proxy(actThis, {
+					set(target, p, value, receiver) {
+						Object.defineProperty(p in secludedProperties ? receiver : target, p, {
+							value,
+							writable: true,
+							enumerable: true,
+							configurable: true
+						})
+						return true
+					},
+					getPrototypeOf: (target) => target
+				})
+			let secluded: InstanceType<TBase>
+			/* Here, what happens:
+			`init.initialObject` is the instance of the secluded class who contains all its public properties
+			`init.privateProperties` is a pure object containing all its private properties
+			We need the initial object but with only the private properties
+			1- we remove all the public ones (they have been transferred to `constructedObject`)
+			2- we restore the private ones
+			*/
+			// Except when we're the main class, or when the secluded is a diamond, then we create a new object
+			if (!diamondSecluded) secluded = Object.create(protoProxy, init.privateProperties)
+			else {
+				secluded = init.initialObject!
+				for (const p of [
+					...Object.getOwnPropertyNames(secluded),
+					...Object.getOwnPropertySymbols(secluded)
+				])
+					delete secluded[p]
+				Object.defineProperties(secluded, init.privateProperties)
+				Object.setPrototypeOf(secluded, protoProxy)
+			}
+			privates.set(actThis, secluded)
 		}
 	}
 	function whoAmI(receiver: TBase) {
@@ -114,7 +139,12 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			return undefined
 		},
 		get: (target, p, receiver) => {
-			if (p === 'constructor') return fakeCtor
+			switch (p) {
+				case 'constructor':
+					return fakeCtor
+				case Symbol.toStringTag:
+					return `[Secluded<${target.name}>]`
+			}
 			const actor = whoAmI(receiver)
 			if (p in target.prototype) {
 				const pd = nextInLine(target, p)!
