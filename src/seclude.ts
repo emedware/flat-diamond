@@ -59,7 +59,6 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			value: hasInstanceManager(base),
 			configurable: true
 		})
-		//base[Symbol.hasInstance] = hasInstanceManager(base)
 	}
 	class GateKeeper extends (diamond as any) {
 		static secluded(obj: TBase): TBase | undefined {
@@ -136,6 +135,8 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 	function fakeCtor() {}
 	/**
 	 * Mambo jumbo to determine who is `this`
+	 * Because the prototype becomes the object being constructed, we have to invent a constructor who has this object
+	 * as prototype
 	 */
 	fakeCtor.prototype = new Proxy(base, {
 		getOwnPropertyDescriptor(target, p) {

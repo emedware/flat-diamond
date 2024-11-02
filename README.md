@@ -131,9 +131,9 @@ class X4 { ... }
 class D2 extends D(X1, X3, D1, X4, X2)
 ```
 
-Here, the flat legacy od `D2` will be `D1 - X1 - X3 - X2 - X4`. The fact that `D1` specifies it inherits from `X1` is promised to be kept, the order in the arguments is surely going to happen if the situation is not too complex.
+Here, the flat legacy of `D2` will be `D1 - X1 - X3 - X2 - X4`. The fact that `D1` specifies it inherits from `X1` is promised to be kept, the order in the arguments is surely going to happen if the situation is not too complex.
 
-A real order conflict would imply circular reference who is any impossible.
+A real order conflict would imply circular reference who is impossible.
 
 ### Dealing with non-`Diamond`-ed classes
 
@@ -157,6 +157,8 @@ For the library, a class implementing another without going through the `Diamond
 The only problem still worked on is that if a class who has no implementation for an abstract method appears before another one who has an implementation, the method will be considered abstract (so the order of arguments for `Diamond(...)` matters here), even though a `//@ts-ignore` does the job.
 
 > :arrow_up: Btw, if someone could help me here... It's on `HasBases` type definition
+
+> Note: [It seems impossible...](https://stackoverflow.com/questions/79149281/complex-types-definition-abstract-method-filter)
 
 ### Construction concern
 
@@ -221,11 +223,11 @@ import D, { constructedObject } from 'flat-diamond'
 
 # Seclusion
 
-Another big deal of diamond inheritance is field conflicts.
+Another big deal of diamond inheritance is field and method conflicts.
 
 ## Easy case
 
-You write all the classes and, when remembering a `wingSpan`, you know that a plane is not a duck. You either have a plane wit a duck inside (property) or a duck that imitates a plane - but you don't confuse your `wingSpan`s.
+You write all the classes and, when storing a `wingSpan`, you know that a plane is not a duck. You either have a plane wit a duck inside (property) or a duck that imitates a plane - but you don't confuse your `wingSpan`s.
 
 Don't make field conflicts. Just don't.
 
@@ -233,7 +235,7 @@ Don't make field conflicts. Just don't.
 
 Here it is tricky, and that's where _seclusion_ comes in. Let's speak about seclusion without speaking of diamond - and, if you wish, the seclusion works without the need of involving `Diamond`. (though it is also completely integrated)
 
-Let's say we want a `DuckCourier` to implement `Plane`, and end up with a conflict of `wingSpan` (the one of the duck and the one of the device strapped on him, the `Plane` one)
+Let's say we want a `DuckCourier` to implement `Plane`, and end up with a conflict of `wingSpan` (the one of the duck and the one of the device mounted him, the `Plane` one)
 
 A pure and simple `class DuckCourier extends Plane` would have a field conflict. So, instead, seclusion will be used :
 
@@ -247,7 +249,7 @@ As simple as that, methods (as well as accessors) of `Plane` and `DuckCourier` w
 
 ## But ... How ? And, how can I ...
 
-When a secluded class is implemented, the `Plane` instance prototype will be replaced by `this` (so, here, a `DuckCourier`) mixed with some `Proxy` voodoo to manage who is `this` in method/accessor calls (either `DuckCourier` or `Secluded<Plane>`) - et voilà!
+When a secluded class is implemented (here, a `Plane`), the instance prototype will be replaced by `this` (so, here, a `DuckCourier`) mixed with some `Proxy` voodoo to manage who is `this` in method/accessor calls (either `DuckCourier` or `Secluded<Plane>`) - et voilà!
 
 Because of prototyping, `Secluded<Plane>` has access to all the functionalities of `DuckCourier` (and therefore of `Plane`) while never interfering with `DuckCourier::wingSpan`. Also, having several secluded class in the legacy list will only create several "heads" who will share a prototype.
 
@@ -270,11 +272,13 @@ class DuckCourier extends MountedPlane {
 }
 ```
 
-## Seclusion and construction
+## Seclusion and...
 
-The `Secluded<Plane>` will indeed be the object the `Plane` constructor built! If it was used in the references, it's perfect!
+### ...construction
 
-## Secluding instance methods
+The `Secluded<Plane>` will indeed be the object the `Plane` constructor built! If `this` was used as a reference to have globally in the constructor, it's perfect, as it will also be the object it will have as `this` in his method calls.
+
+### ...instance methods
 
 Yes, it's okay...
 
@@ -283,5 +287,3 @@ So, secluding can also be useful when some class specify different methods with 
 # Participation
 
 The best (even if not only) way to report a bug is to PR a failing unit test.
-
-I have been really struggling with the [`HasBases` issue](#abstraction) and didn't find a way to detect in Typescript types definition if a method is abstract or not - if someone has an idea.
