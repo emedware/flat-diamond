@@ -1,7 +1,7 @@
 import Diamond, { diamondHandler, hasInstanceManager } from './diamond'
 import { constructedObject } from './helpers'
 import { Ctor, KeySet, Newable } from './types'
-import { allFLegs, bottomLeg, fLegs, nextInLine } from './utils'
+import { allFLegs, bottomLeg, fLegs, nextInLine, secludedPropertyDescriptor } from './utils'
 
 const publicPart = (x: Ctor): Ctor => Object.getPrototypeOf(Object.getPrototypeOf(x))
 /**
@@ -13,14 +13,18 @@ interface BasketBall {
 	privateProperties: PropertyDescriptorMap
 	initialObject?: any
 }
-export type Secluded<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]> = Newable<
+type SecludedClass<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]> = Newable<
 	Omit<InstanceType<TBase>, Keys[number]>
-> & {
-	secluded(obj: InstanceType<TBase>): InstanceType<TBase> | undefined
+>
+export type Secluded<
+	TBase extends Ctor,
+	Keys extends (keyof InstanceType<TBase>)[]
+> = SecludedClass<TBase, Keys> & {
+	secluded(obj: InstanceType<SecludedClass<TBase, Keys>>): InstanceType<TBase> | undefined
 }
 export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]>(
 	base: TBase,
-	properties: Keys
+	properties: Keys = [] as any as Keys
 ): Secluded<TBase, Keys> {
 	const secludedProperties: KeySet = properties.reduce(
 			(acc, p) => ({ ...acc, [p]: true }) as KeySet,
@@ -47,11 +51,14 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 	}
 	const privates = new WeakMap<GateKeeper, TBase>(),
 		diamondSecluded = !fLegs(base),
-		// any: abstract -> newable
+		// `any` because newable -> abstract
 		diamond = diamondSecluded ? (Diamond(PropertyCollector) as any) : PropertyCollector
 	// We make sure `Secluded(X).secluded(x) instanceof X`
 	if (diamondSecluded) {
-		Object.defineProperty(base, Symbol.hasInstance, { value: hasInstanceManager(base) })
+		Object.defineProperty(base, Symbol.hasInstance, {
+			value: hasInstanceManager(base),
+			configurable: true
+		})
 		//base[Symbol.hasInstance] = hasInstanceManager(base)
 	}
 	class GateKeeper extends (diamond as any) {
@@ -67,8 +74,16 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 				initPropertiesBasket.shift()
 			}
 			const actThis = constructedObject(this),
-				// This proxy is used to write public properties in the prototype (the public object)
+				// This proxy is used to write public properties in the prototype (the public object) and give
+				// access to the private instance methods. It's the one between `Secluded` and the main object
 				protoProxy = new Proxy(actThis, {
+					get(target, p, receiver) {
+						if (p in base.prototype) {
+							const pd = nextInLine(base, p)
+							return pd && (pd.value || pd.get!.call(receiver))
+						}
+						return p in secludedProperties ? undefined : Reflect.get(target, p, receiver)
+					},
 					set(target, p, value, receiver) {
 						Object.defineProperty(p in secludedProperties ? receiver : target, p, {
 							value,
@@ -117,10 +132,15 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			private: domain === 'private' ? receiver : privates.get(receiver)!
 		}
 	}
+	// `Diamond` browse legacies and constructors a lot - we need to provide something
 	function fakeCtor() {}
+	/**
+	 * Mambo jumbo to determine who is `this`
+	 */
 	fakeCtor.prototype = new Proxy(base, {
 		getOwnPropertyDescriptor(target, p) {
 			if (p in target.prototype) {
+				if (p in secludedProperties) return secludedPropertyDescriptor
 				const pd = nextInLine(target, p)!
 				if ('value' in pd && typeof pd.value === 'function')
 					return {
@@ -152,7 +172,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 					return `[Secluded<${target.name}>]`
 			}
 			const actor = whoAmI(receiver)
-			if (p in target.prototype) {
+			if (p in target.prototype && (!(p in secludedProperties) || actor.domain === 'private')) {
 				const pd = nextInLine(target, p)!
 				if ('get' in pd) return pd.get!.call(actor.private)
 				if ('value' in pd) {

@@ -7,10 +7,44 @@ interface Scenario {
 	getPrvFld(): number
 	setPubFld(v: number): void
 	getPubFld(): number
-
+	methodA(): string
 	get accFld(): number
 	set accFld(v: number)
 }
+
+let builtX: X | null = null
+class X {
+	constructor() {
+		builtX = this
+	}
+	pubFld = 0
+	prvFld = 8
+	setPrvFld(v: number) {
+		this.prvFld = v
+	}
+	getPrvFld() {
+		return this.prvFld
+	}
+	setPubFld(v: number) {
+		this.pubFld = v
+	}
+	getPubFld() {
+		return this.pubFld
+	}
+	methodA() {
+		return 'Xa' + this.methodB()
+	}
+	methodB() {
+		return 'Xb'
+	}
+	get accFld() {
+		return this.prvFld
+	}
+	set accFld(v: number) {
+		this.prvFld = v
+	}
+}
+const P = Seclude(X, ['prvFld', 'methodB'])
 
 function testScenario(t: Scenario, P: { secluded(t: any): any }) {
 	expect(t.pubFld).toBe(0)
@@ -30,82 +64,54 @@ function testScenario(t: Scenario, P: { secluded(t: any): any }) {
 	const pp = P.secluded(t)
 	expect(pp?.prvFld).toBe(5)
 	expect(pp?.pubFld).toBe(4)
+	//methods
+	expect(t.methodA()).toBe('yXaXb')
+	expect(() => (t as any).methodB()).toThrow()
 	return t
 }
 
+beforeAll(() => {
+	builtX = null
+})
 test('leg-less', () => {
-	let builtX: X | null = null
-	class X {
-		constructor() {
-			builtX = this
-		}
-		pubFld = 0
-		prvFld = 8
-		setPrvFld(v: number) {
-			this.prvFld = v
-		}
-		getPrvFld() {
-			return this.accFld
-		}
-		setPubFld(v: number) {
-			this.pubFld = v
-		}
-		getPubFld() {
-			return this.pubFld
-		}
-
-		get accFld() {
-			return this.prvFld
-		}
-		set accFld(v: number) {
-			this.prvFld = v
-		}
-	}
-	const P = Seclude(X, ['prvFld'])
 	class Y extends P {
 		prvFld = 10
+		//@ts-ignore https://github.com/microsoft/TypeScript/issues/27689
+		methodA() {
+			return 'y' + super.methodA()
+		}
 	}
 
 	let t = testScenario(new Y(), P)
 	expect(t instanceof X).toBe(true)
 	expect(builtX! instanceof X).toBe(true)
 	expect(builtX).toBe(P.secluded(t))
+
+	// This is no code to run but to type-check
+	function tsTest() {
+		let p = new P()
+		p.pubFld++
+		//@ts-expect-error
+		P.prvFld++
+	}
 })
 
 test('leg-half', () => {
-	let builtX: X | null = null
-	class X {
-		constructor() {
-			builtX = this
-		}
-		pubFld = 0
-		prvFld = 8
-		setPrvFld(v: number) {
-			this.prvFld = v
-		}
-		getPrvFld() {
-			return this.prvFld
-		}
-		setPubFld(v: number) {
-			this.pubFld = v
-		}
-		getPubFld() {
-			return this.pubFld
-		}
-
-		get accFld() {
-			return this.prvFld
-		}
-		set accFld(v: number) {
-			this.prvFld = v
-		}
-	}
-	const P = Seclude(X, ['prvFld'])
 	class Y {
 		prvFld = 10
 	}
-	class D extends Diamond(P, Y) {}
-	class E extends Diamond(Y, P) {}
+	class D extends Diamond(P, Y) {
+		//@ts-ignore https://github.com/microsoft/TypeScript/issues/27689
+		methodA() {
+			return 'y' + super.methodA()
+		}
+	}
+	class E extends Diamond(Y, P) {
+		//@ts-ignore https://github.com/microsoft/TypeScript/issues/27689
+		methodA() {
+			return 'y' + super.methodA()
+		}
+	}
 
 	let t = testScenario(new D(), P)
 	expect(t instanceof X).toBe(true)
@@ -118,9 +124,9 @@ test('leg-half', () => {
 })
 
 test('leg-full', () => {
-	// Note: the scenario is so unrealistic (if X is aware of Diamonds, it needs no seclusion) that no way to find the
-	// 'secluded' object is provided - hence there is no test on that part here
-	class X extends Diamond() {
+	// Note: the scenario can perhaps happen when a library extends a class that it receives as a parameter
+	// Anyway, it's good to stretch the edge-cases browsing
+	class XD extends Diamond() {
 		pubFld = 0
 		prvFld = 8
 		setPrvFld(v: number) {
@@ -135,7 +141,12 @@ test('leg-full', () => {
 		getPubFld() {
 			return this.pubFld
 		}
-
+		methodA() {
+			return 'Xa' + this.methodB()
+		}
+		methodB() {
+			return 'Xb'
+		}
 		get accFld() {
 			return this.prvFld
 		}
@@ -143,12 +154,22 @@ test('leg-full', () => {
 			this.prvFld = v
 		}
 	}
-	const P = Seclude(X, ['prvFld'])
+	const P = Seclude(X, ['prvFld', 'methodB'])
 	class Y {
 		prvFld = 10
 	}
-	class D extends Diamond(P, Y) {}
-	class E extends Diamond(Y, P) {}
+	class D extends Diamond(P, Y) {
+		//@ts-ignore https://github.com/microsoft/TypeScript/issues/27689
+		methodA() {
+			return 'y' + super.methodA()
+		}
+	}
+	class E extends Diamond(Y, P) {
+		//@ts-ignore https://github.com/microsoft/TypeScript/issues/27689
+		methodA() {
+			return 'y' + super.methodA()
+		}
+	}
 
 	testScenario(new D(), P)
 	testScenario(new E(), P)

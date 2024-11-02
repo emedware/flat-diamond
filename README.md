@@ -247,7 +247,7 @@ As simple as that, methods (as well as accessors) of `Plane` and `DuckCourier` w
 
 ## But ... How ? And, how can I ...
 
-When a secluded class is implemented, the `Plane` instance prototype will be replaced by `this` (so, here, a `DuckCourier`). Some `Proxy` voodoo is juggled with to manage who is `this` in method calls (either `DuckCourier` or `Secluded<Plane>`) - et voilà!
+When a secluded class is implemented, the `Plane` instance prototype will be replaced by `this` (so, here, a `DuckCourier`) mixed with some `Proxy` voodoo to manage who is `this` in method/accessor calls (either `DuckCourier` or `Secluded<Plane>`) - et voilà!
 
 Because of prototyping, `Secluded<Plane>` has access to all the functionalities of `DuckCourier` (and therefore of `Plane`) while never interfering with `DuckCourier::wingSpan`. Also, having several secluded class in the legacy list will only create several "heads" who will share a prototype.
 
@@ -260,12 +260,12 @@ class Plane {
 	wingSpan: number = 200
 }
 
-const SecludedPlane = Seclude(Plane, ['wingSpan'])
+const MountedPlane = Seclude(Plane, ['wingSpan'])
 
-class DuckCourier extends SecludedPlane {
+class DuckCourier extends MountedPlane {
 	wingSpan: number = 80
 	get isDeviceSafe(): boolean {
-		return SecludedPlane.secluded(this).wingSpan > 2 * this.wingSpan
+		return MountedPlane.secluded(this).wingSpan > 2 * this.wingSpan
 	}
 }
 ```
@@ -274,9 +274,11 @@ class DuckCourier extends SecludedPlane {
 
 The `Secluded<Plane>` will indeed be the object the `Plane` constructor built! If it was used in the references, it's perfect!
 
-## Limitations
+## Secluding instance methods
 
-For now, only the fields can be secluded, not the methods
+Yes, it's okay...
+
+So, secluding can also be useful when some class specify different methods with the same name, so that each has its unique version (unaccessible from outside)
 
 # Participation
 

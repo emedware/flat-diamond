@@ -6,7 +6,6 @@ import { Ctor } from './types'
  * @param base The base class
  */
 export function* linearLeg(base: Ctor): IterableIterator<Ctor> {
-	yield base
 	for (
 		let ctor = base;
 		ctor !== Object && !allFLegs.has(ctor);
@@ -30,11 +29,18 @@ export function bottomLeg(ctor: Ctor) {
 export function nextInLine(ctor: Ctor, name: PropertyKey) {
 	let rv: PropertyDescriptor | undefined
 	for (const uniLeg of linearLeg(ctor))
-		if ((rv = Object.getOwnPropertyDescriptor(uniLeg.prototype, name))) return rv
+		if ((rv = Object.getOwnPropertyDescriptor(uniLeg.prototype, name)))
+			return rv === secludedPropertyDescriptor ? undefined : rv
 }
 
 export function fLegs(ctor: Ctor) {
 	return allFLegs.get(bottomLeg(ctor))
+}
+
+// Communication unique constant for `seclude` to communicate with `diamond`
+export const secludedPropertyDescriptor: PropertyDescriptor = {
+	value: undefined,
+	configurable: true
 }
 
 /**
