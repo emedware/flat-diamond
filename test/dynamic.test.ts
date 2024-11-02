@@ -7,10 +7,6 @@ class A {
 }
 
 class B extends Diamond(A) {
-	constructor(...args: any[]) {
-		const [myArg, ...rest] = args
-		super(...rest)
-	}
 	method(x: number) {
 		return super.method(x + 2)
 	}

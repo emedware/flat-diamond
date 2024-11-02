@@ -213,7 +213,7 @@ import D, { constructedObject } from 'flat-diamond'
 > Note: There is no need to modify it directly, all the properties initialized on the temporary object are going to be transposed on it
 > Note: `constructedObject(this)` will return a relevant value _only_ in classes extending `Diamond(...)` after `super(...)`
 
-# Protection
+# Seclusion
 
 Another big deal of diamond inheritance is field conflicts.
 
@@ -225,50 +225,50 @@ Don't make field conflicts. Just don't.
 
 ## Yes, but it's a library I don't write
 
-Here it is tricky, and that's where _protection_ comes in. Let's speak about protection without speaking of diamond - and, if you wish, the protection works without the need of involving `Diamond`. (though it is also completely integrated)
+Here it is tricky, and that's where _seclusion_ comes in. Let's speak about seclusion without speaking of diamond - and, if you wish, the seclusion works without the need of involving `Diamond`. (though it is also completely integrated)
 
 Let's say we want a `DuckCourier` to implement `Plane`, and end up with a conflict of `wingSpan` (the one of the duck and the one of the device strapped on him, the `Plane` one)
 
-A pure and simple `class DuckCourier extends Plane` would have a field conflict. So, instead, protection will be used :
+A pure and simple `class DuckCourier extends Plane` would have a field conflict. So, instead, seclusion will be used :
 
 ```ts
-import { Protect } from 'flat-diamond'
+import { Seclude } from 'flat-diamond'
 
-class DuckCourier extends Protect(Plane, ['wingSpan']) { ... }
+class DuckCourier extends Seclude(Plane, ['wingSpan']) { ... }
 ```
 
 As simple as that, methods (as well as accessors) of `Plane` and `DuckCourier` will access two different values when accessing `this.wingSpan`
 
 ## But ... How ? And, how can I ...
 
-When a protected class is implemented, `this` (so, here, a `DuckCourier`) will be used as the prototype for a `Private<Plane>`. A Proxy is added between `Protected` and `Plane` to manage who is `this` in method calls (either `DuckCourier` or `Private<Plane>`) - et voilà!
+When a secluded class is implemented, `this` (so, here, a `DuckCourier`) will be used as the prototype for a `Private<Plane>`. A Proxy is added between `Secluded` and `Plane` to manage who is `this` in method calls (either `DuckCourier` or `Private<Plane>`) - et voilà!
 
-Because of prototyping, `Private<Plane>` has access to all the functionalities of `DuckCourier` (and therefore of `Plane`) while never interfering with `DuckCourier::wingSpan`. Also, having several protected class in the legacy list will only create several "heads" who will share a prototype.
+Because of prototyping, `Private<Plane>` has access to all the functionalities of `DuckCourier` (and therefore of `Plane`) while never interfering with `DuckCourier::wingSpan`. Also, having several secluded class in the legacy list will only create several "heads" who will share a prototype.
 
-`DuckCourier` on another hand, _can_ interfere with `Plane::wingSpan` if needed thanks to the `privatePart` exposed by the `Protected` class.
+`DuckCourier` on another hand, _can_ interfere with `Plane::wingSpan` if needed thanks to the `privatePart` exposed by the `Secluded` class.
 
 ```ts
-import { Protect } from 'flat-diamond'
+import { Seclude } from 'flat-diamond'
 
 class Plane {
 	wingSpan: number = 200
 }
 
-const ProtectedPlane = Protect(Plane, ['wingSpan'])
+const SecludedPlane = Seclude(Plane, ['wingSpan'])
 
-class DuckCourier extends ProtectedPlane {
+class DuckCourier extends SecludedPlane {
 	wingSpan: number = 80
 	get isDeviceSafe(): boolean {
-		return ProtectedPlane.privatePart(this).wingSpan > 2 * this.wingSpan
+		return SecludedPlane.privatePart(this).wingSpan > 2 * this.wingSpan
 	}
 }
 ```
 
 ## Limitations
 
-Again, the object exposed in the constructor won't be the same as the one faces from inside the protected object' methods/accessors
+Again, the object exposed in the constructor won't be the same as the one faces from inside the secluded object' methods/accessors
 
-For now, only the fields can be protected, not the methods
+For now, only the fields can be secluded, not the methods
 
 # Participation
 

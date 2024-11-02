@@ -5,23 +5,23 @@ import { allFLegs, bottomLeg, fLegs, nextInLine } from './utils'
 
 const publicPart = (x: Ctor): Ctor => Object.getPrototypeOf(Object.getPrototypeOf(x))
 
-export type Prutected<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]> = Newable<
+export type Secluded<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]> = Newable<
 	Omit<InstanceType<TBase>, Keys[number]>
 > & {
 	privatePart(obj: InstanceType<TBase>): InstanceType<TBase> | undefined
 }
-export function Protect<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]>(
+export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]>(
 	base: TBase,
 	properties: Keys
-): Prutected<TBase, Keys> {
-	const protectedProperties: KeySet = properties.reduce(
+): Secluded<TBase, Keys> {
+	const secludedProperties: KeySet = properties.reduce(
 			(acc, p) => ({ ...acc, [p]: true }) as KeySet,
 			{}
 		),
 		initPropertiesBasket: PropertyDescriptorMap[] = []
 	/**
 	 * In order to integrate well in diamonds, we need to be a diamond
-	 * When we create a diamond between the Protected and the base, the private properties of the base *have to*
+	 * When we create a diamond between the Secludeded and the base, the private properties of the base *have to*
 	 * be collected before the diamond propagate them to the `constructedObject`
 	 */
 	abstract class PropertyCollector extends base {
@@ -29,16 +29,16 @@ export function Protect<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			super(...args)
 			const init = initPropertiesBasket[0],
 				allProps = Object.getOwnPropertyDescriptors(this)
-			for (const p in protectedProperties)
+			for (const p in secludedProperties)
 				if (p in allProps) {
 					init[p] = allProps[p]
 					delete this[p]
 				}
 		}
 	}
-	const privates = new WeakMap<Protected, TBase>()
+	const privates = new WeakMap<Secluded, TBase>()
 	const diamond = fLegs(base) ? PropertyCollector : (Diamond(PropertyCollector) as TBase)
-	class Protected extends (diamond as any) {
+	class Secluded extends (diamond as any) {
 		static privatePart(obj: TBase): TBase | undefined {
 			return privates.get(obj)
 		}
@@ -57,7 +57,7 @@ export function Protect<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 					// This proxy is used to write public properties in the prototype (the public object)
 					new Proxy(actThis, {
 						set(target, p, value, receiver) {
-							Object.defineProperty(p in protectedProperties ? receiver : target, p, {
+							Object.defineProperty(p in secludedProperties ? receiver : target, p, {
 								value,
 								writable: true,
 								enumerable: true,
@@ -130,7 +130,7 @@ export function Protect<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 				// No legacy involved: it was well defined in our classes but `readable: false` ...
 				return undefined
 			}
-			if (p in protectedProperties && actor.domain === 'private')
+			if (p in secludedProperties && actor.domain === 'private')
 				// If we arrive here, it means it's private but not set in the private part
 				return undefined
 			if (allFLegs.has(actor.public)) return diamondHandler.get(bottomLeg(target), p, receiver)
@@ -148,7 +148,7 @@ export function Protect<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 				if (!pd.writable) return false
 			}
 
-			if (p in protectedProperties && actor.domain === 'private') {
+			if (p in secludedProperties && actor.domain === 'private') {
 				Object.defineProperty(receiver, p, {
 					value,
 					writable: true,
@@ -169,6 +169,6 @@ export function Protect<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 		},
 		getPrototypeOf: (target) => diamond.prototype
 	})
-	Object.setPrototypeOf(Protected.prototype, fakeCtor.prototype)
-	return Protected as any
+	Object.setPrototypeOf(Secluded.prototype, fakeCtor.prototype)
+	return Secluded as any
 }

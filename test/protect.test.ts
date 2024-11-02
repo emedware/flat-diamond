@@ -1,4 +1,4 @@
-import Diamond, { Protect } from '../src'
+import Diamond, { Seclude } from '../src'
 
 interface Scenario {
 	pubFld: number
@@ -56,7 +56,7 @@ test('leg-less', () => {
 			this.prvFld = v
 		}
 	}
-	const P = Protect(X, ['prvFld'])
+	const P = Seclude(X, ['prvFld'])
 	class Y extends P {
 		prvFld = 10
 	}
@@ -88,7 +88,7 @@ test('leg-half', () => {
 			this.prvFld = v
 		}
 	}
-	const P = Protect(X, ['prvFld'])
+	const P = Seclude(X, ['prvFld'])
 	class Y {
 		prvFld = 10
 	}
@@ -123,7 +123,7 @@ test('leg-full', () => {
 			this.prvFld = v
 		}
 	}
-	const P = Protect(X, ['prvFld'])
+	const P = Seclude(X, ['prvFld'])
 	class Y {
 		prvFld = 10
 	}
