@@ -35,7 +35,7 @@
 		"url": "git+https://github.com/emedware/flat-diamond.git"
 	},
 	"author": "François Marie <eeddow@gmail.com>",
-	"license": "GPL-3.0-only",
+	"license": "ISC",
 	"devDependencies": {
 		"@rollup/plugin-commonjs": "^25.0.7",
 		"@rollup/plugin-node-resolve": "^15.2.3",
