@@ -45,6 +45,7 @@ export function hasInstanceManager<Class extends Ctor>(cls: Class) {
 }
 
 function forwardTempTo(target: any, temp: any) {
+	if (target === temp) return
 	Object.defineProperties(target, Object.getOwnPropertyDescriptors(temp))
 	for (const p of Object.getOwnPropertyNames(temp)) delete temp[p]
 	Object.setPrototypeOf(temp, new Proxy(target, forwardProxyHandler))
@@ -84,19 +85,20 @@ export default function Diamond<TBases extends Ctor[]>(
 					built: this,
 					strategy: buildingStrategy
 				} // It will be set to `null` on purpose in the process and needs to be restored
-			const locallyStoredDiamond = buildingDiamond!.built
+			const locallyStoredDiamond = buildingDiamond!
 			try {
 				// `super()`: Builds the temporary objects and import all their properties
 				for (const subs of responsibility) {
+					buildingDiamond = fLegs(subs) ? locallyStoredDiamond : null
 					const temp = new (subs as any)(...args) // `any` because declared as an abstract class
 					// Even if `Diamond` managed: property initializers do not go through proxy
-					if (locallyStoredDiamond !== temp) forwardTempTo(locallyStoredDiamond, temp)
+					forwardTempTo(locallyStoredDiamond.built, temp)
 				}
 			} finally {
-				if (locallyStoredDiamond !== this) forwardTempTo(locallyStoredDiamond, this)
+				forwardTempTo(locallyStoredDiamond.built, this)
 				buildingDiamond = null
 			}
-			return locallyStoredDiamond
+			return locallyStoredDiamond.built
 		}
 		static [Symbol.hasInstance] = hasInstanceManager(Diamond)
 	}
