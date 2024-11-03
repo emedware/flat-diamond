@@ -1,5 +1,5 @@
 import { Ctor, HasBases, Newable } from './types'
-import { allFLegs, bottomLeg, fLegs, nextInFLeg, temporaryBuiltObjects } from './utils'
+import { allFLegs, bottomLeg, fLegs, forwardProxyHandler, nextInFLeg } from './utils'
 
 type BuildingStrategy = Map<Ctor, Ctor[]>
 let buildingDiamond: {
@@ -44,6 +44,12 @@ export function hasInstanceManager<Class extends Ctor>(cls: Class) {
 	}
 }
 
+function forwardTempTo(target: any, temp: any) {
+	Object.defineProperties(target, Object.getOwnPropertyDescriptors(temp))
+	for (const p of Object.getOwnPropertyNames(temp)) delete temp[p]
+	Object.setPrototypeOf(temp, new Proxy(target, forwardProxyHandler))
+}
+
 export default function Diamond<TBases extends Ctor[]>(
 	...baseClasses: TBases
 ): Newable<HasBases<TBases>> {
@@ -70,38 +76,27 @@ export default function Diamond<TBases extends Ctor[]>(
 	const myResponsibility: Ctor[] = []
 	class Diamond {
 		constructor(...args: any[]) {
-			const itsMe = !buildingDiamond,
-				responsibility = itsMe
-					? myResponsibility
-					: buildingDiamond!.strategy.get(this.constructor as Ctor)!
-			if (itsMe)
+			const responsibility = buildingDiamond
+				? buildingDiamond!.strategy.get(this.constructor as Ctor)!
+				: myResponsibility
+			if (!buildingDiamond)
 				buildingDiamond = {
 					built: this,
 					strategy: buildingStrategy
 				} // It will be set to `null` on purpose in the process and needs to be restored
-			const locallyStoredDiamond = buildingDiamond!
+			const locallyStoredDiamond = buildingDiamond!.built
 			try {
 				// `super()`: Builds the temporary objects and import all their properties
 				for (const subs of responsibility) {
 					const temp = new (subs as any)(...args) // `any` because declared as an abstract class
-					Object.defineProperties(
-						locallyStoredDiamond.built,
-						Object.getOwnPropertyDescriptors(temp)
-					)
+					// Even if `Diamond` managed: property initializers do not go through proxy
+					if (locallyStoredDiamond !== temp) forwardTempTo(locallyStoredDiamond, temp)
 				}
 			} finally {
-				if (!itsMe) {
-					// Feels the same
-					Object.setPrototypeOf(this, Object.getPrototypeOf(locallyStoredDiamond.built))
-					Object.defineProperties(
-						this,
-						Object.getOwnPropertyDescriptors(locallyStoredDiamond.built)
-					)
-					// Is the same (through `constructedObject`)
-					temporaryBuiltObjects.set(this, locallyStoredDiamond.built)
-				}
+				if (locallyStoredDiamond !== this) forwardTempTo(locallyStoredDiamond, this)
 				buildingDiamond = null
 			}
+			return locallyStoredDiamond
 		}
 		static [Symbol.hasInstance] = hasInstanceManager(Diamond)
 	}

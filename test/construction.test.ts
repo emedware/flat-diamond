@@ -1,4 +1,4 @@
-import D, { constructedObject } from '../src'
+import D from '../src'
 import { log, logs } from './logger'
 
 class End1 {
@@ -30,7 +30,7 @@ let constructedObjectFromA: any = null
 class A extends D() {
 	constructor(aValue: string) {
 		super(aValue + ' and A')
-		constructedObjectFromA = constructedObject(this)
+		constructedObjectFromA = this
 		log('A:', aValue)
 	}
 }

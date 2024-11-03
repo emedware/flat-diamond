@@ -1,4 +1,4 @@
-import Diamond, { constructedObject, Seclude } from '../src'
+import Diamond, { Seclude } from '../src'
 
 interface Scenario {
 	pubFld: number

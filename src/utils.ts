@@ -64,5 +64,38 @@ export function nextInFLeg(ctor: Ctor, name: PropertyKey, diamond: Ctor) {
 	return rv
 }
 
-export const temporaryBuiltObjects = new WeakMap<object, object>(),
-	allFLegs = new WeakMap<Ctor, Ctor[]>()
+export const allFLegs = new WeakMap<Ctor, Ctor[]>()
+
+// Deflect all actions so they they apply to `target` instead of `receiver`
+export const forwardProxyHandler: ProxyHandler<Ctor> = {
+	get(target, p) {
+		return Reflect.get(target, p)
+	},
+	set(target, p, v) {
+		return Reflect.set(target, p, v)
+	},
+	getOwnPropertyDescriptor(target, p) {
+		return Reflect.getOwnPropertyDescriptor(target, p)
+	},
+	getPrototypeOf(target) {
+		return Reflect.getPrototypeOf(target)
+	},
+	ownKeys(target) {
+		return Reflect.ownKeys(target)
+	},
+	has(target, p) {
+		return Reflect.has(target, p)
+	},
+	isExtensible(target) {
+		return Reflect.isExtensible(target)
+	},
+	preventExtensions(target) {
+		return Reflect.preventExtensions(target)
+	},
+	defineProperty(target, p, attributes) {
+		return Reflect.defineProperty(target, p, attributes)
+	},
+	deleteProperty(target, p) {
+		return Reflect.deleteProperty(target, p)
+	}
+}

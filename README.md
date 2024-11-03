@@ -196,10 +196,12 @@ For instance, one cannot use :
 
 ```ts
     constructor() {
-        super{}
+        super()
         instances.register(this);
     }
 ```
+
+> Note: Indeed, this should still just work fine in most case as `Diamond` modifies the temporary object for it to become a straight "forward" to the `Diamond` object (anyway doomed to be garbage collected if not used) - it wouldn't be the same reference but the same behavior with the same data.
 
 ### When we are writing the class
 

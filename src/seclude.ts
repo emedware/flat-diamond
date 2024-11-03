@@ -1,5 +1,4 @@
 import Diamond, { diamondHandler, hasInstanceManager } from './diamond'
-import { constructedObject } from './helpers'
 import { Ctor, KeySet, Newable } from './types'
 import { allFLegs, bottomLeg, fLegs, nextInLine, secludedPropertyDescriptor } from './utils'
 
@@ -34,7 +33,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 	/**
 	 * In order to integrate well in diamonds, we need to be a diamond
 	 * When we create a diamond between the Secluded and the base, the private properties of the base *have to*
-	 * be collected before the diamond propagate them to the `constructedObject`
+	 * be collected before the diamond propagate them to the constructed object
 	 */
 	abstract class PropertyCollector extends base {
 		constructor(...args: any[]) {
@@ -72,10 +71,9 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			} finally {
 				initPropertiesBasket.shift()
 			}
-			const actThis = constructedObject(this),
-				// This proxy is used to write public properties in the prototype (the public object) and give
+			const // This proxy is used to write public properties in the prototype (the public object) and give
 				// access to the private instance methods. It's the one between `Secluded` and the main object
-				protoProxy = new Proxy(actThis, {
+				protoProxy = new Proxy(this, {
 					get(target, p, receiver) {
 						if (p in base.prototype) {
 							const pd = nextInLine(base, p)
@@ -99,7 +97,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			`init.initialObject` is the instance of the secluded class who contains all its public properties
 			`init.privateProperties` is a pure object containing all its private properties
 			We need the initial object but with only the private properties
-			1- we remove all the public ones (they have been transferred to `constructedObject`)
+			1- we remove all the public ones
 			2- we restore the private ones
 			*/
 			// Except when we're the main class, or when the secluded is a diamond, then we create a new object
@@ -114,7 +112,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 				Object.defineProperties(secluded, init.privateProperties)
 				Object.setPrototypeOf(secluded, protoProxy)
 			}
-			privates.set(actThis, secluded)
+			privates.set(this, secluded)
 		}
 	}
 	function whoAmI(receiver: TBase) {

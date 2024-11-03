@@ -1,15 +1,5 @@
 import { Ctor } from './types'
-import { fLegs, temporaryBuiltObjects } from './utils'
-
-/**
- * As constructors build temporary objects, this function returns a reference to the real object being constructed.
- * In other cases, it just returns the object itself
- * @param obj `this` - the object being constructed by this constructor
- * @returns
- */
-export function constructedObject<Class extends object>(obj: Class): Class {
-	return (temporaryBuiltObjects.get(obj) as Class) || obj
-}
+import { fLegs } from './utils'
 
 /**
  * `instanceof` substitute for diamonds
