@@ -64,12 +64,11 @@ testC.method()
 
 In the first case (`testA.method()`), the `super.method()` will call the one defined in `X`. In the second case (`testC.method()`), when the one from class `A` will be invoked, the `super.method()` will call the one defined in `B` who will in turn call the one defined in `X`
 
+Also note that `Diamond(...)` are useful even when inheriting no or one class: The `Diamond` between `A` and `X` here allows the library to reorganize the classes. Without it, the `super` of `A` would always end up in `X`.
+
 ### A bit made up ?
 
-No, and even well constructed! In the previous example (`C - A - B - X`), invoking `new C()` will invoke the constructors of `C`, `A`, `B` then `X` in sequence (roughly)
-
-> :warning: Not on the same object, even if it really feels the same.
-> When constructing, `this` is a temporary object and it cannot be used as a reference - as discussed [below](#substitute-for-this-stability)
+No, and even well constructed! In the previous example (`C - A - B - X`), invoking `new C()` will invoke the constructors of `C`, `A`, `B` then `X` in sequence.
 
 ## But ... How ?
 
@@ -96,7 +95,7 @@ let testA = new Xa(),
 
 When constructing `Xa`, the constructor of `A` will be invoked with `this` being of class `A`
 
-When constructing `Xb`, the constructor of `B` will be invoked with `this` being (after `super()`) of class `Xb`
+When constructing `Xb`, the constructor of `B` will be invoked with `this` being (after `super()`) the constructed diamond (here, `Xb`)
 
 > Note: This is the only difference made by using `extend D()` for root classes
 
@@ -160,7 +159,7 @@ The only problem still worked on is that if a class who has no implementation fo
 
 > Note: [It seems impossible...](https://stackoverflow.com/questions/79149281/complex-types-definition-abstract-method-filter)
 
-### Construction concern
+### Constructor parameters
 
 The main concern is about the fact that a class can think it extends directly another and another class can "come" in between in some legacy schemes. It is mainly concerning for constructors.
 
@@ -188,40 +187,9 @@ D2(0)
         X2(2)
 ```
 
-## Substitute for `this` stability
+### Construction concern
 
-Because constructors cannot be invoked like other functions (it was simpler in older days), the objects have to be duplicated on construction.
-
-For instance, one cannot use :
-
-```ts
-    constructor() {
-        super()
-        instances.register(this);
-    }
-```
-
-> Note: Indeed, this should still just work fine in most case as `Diamond` modifies the temporary object for it to become a straight "forward" to the `Diamond` object (anyway doomed to be garbage collected if not used) - it wouldn't be the same reference but the same behavior with the same data.
-
-### When we are writing the class
-
-When constructing a class who inherit (directly or indirectly) a `Diamond`, the function `constructedObject` helps you retrieve the actual instance being constructed - this is the one you want to refer to.
-
-```ts
-import D, { constructedObject } from 'flat-diamond'
-...
-    constructor() {
-        super()
-        instances.register(constructedObject(this))
-    }
-```
-
-> Note: There is no need to modify it directly, all the properties initialized on the temporary object are going to be transposed on it
-> Note: `constructedObject(this)` will return a relevant value _only_ in classes extending `Diamond(...)` after `super(...)`
-
-### When the class is from a library
-
-[Seclusion](#seclusion-and-construction) is your friend
+Building another diamond in the constructor before calling `super(...)` will break the game. (Fields are initialized when `super` returns - no worries there)
 
 # Seclusion
 

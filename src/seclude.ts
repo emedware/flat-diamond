@@ -1,6 +1,13 @@
 import Diamond, { diamondHandler, hasInstanceManager } from './diamond'
 import { Ctor, KeySet, Newable } from './types'
-import { allFLegs, bottomLeg, fLegs, nextInLine, secludedPropertyDescriptor } from './utils'
+import {
+	allFLegs,
+	bottomLeg,
+	fLegs,
+	nextInLine,
+	secludedPropertyDescriptor,
+	secludedProxyHandler
+} from './utils'
 
 const publicPart = (x: Ctor): Ctor => Object.getPrototypeOf(Object.getPrototypeOf(x))
 /**
@@ -23,7 +30,8 @@ export type Secluded<
 }
 export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]>(
 	base: TBase,
-	properties: Keys = [] as any as Keys
+	//@ts-expect-error Cannot convert `never[]` to `Keys`
+	properties: Keys = []
 ): Secluded<TBase, Keys> {
 	const secludedProperties: KeySet = properties.reduce(
 			(acc, p) => ({ ...acc, [p]: true }) as KeySet,
@@ -50,8 +58,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 	}
 	const privates = new WeakMap<GateKeeper, TBase>(),
 		diamondSecluded = !fLegs(base),
-		// `any` because newable -> abstract
-		diamond = diamondSecluded ? (Diamond(PropertyCollector) as any) : PropertyCollector
+		diamond = diamondSecluded ? Diamond(PropertyCollector) : PropertyCollector
 	// We make sure `Secluded(X).secluded(x) instanceof X`
 	if (diamondSecluded) {
 		Object.defineProperty(base, Symbol.hasInstance, {
@@ -59,7 +66,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			configurable: true
 		})
 	}
-	class GateKeeper extends (diamond as any) {
+	class GateKeeper extends diamond {
 		static secluded(obj: TBase): TBase | undefined {
 			return privates.get(obj)
 		}
@@ -73,25 +80,8 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			}
 			const // This proxy is used to write public properties in the prototype (the public object) and give
 				// access to the private instance methods. It's the one between `Secluded` and the main object
-				protoProxy = new Proxy(this, {
-					get(target, p, receiver) {
-						if (p in base.prototype) {
-							const pd = nextInLine(base, p)
-							return pd && (pd.value || pd.get!.call(receiver))
-						}
-						return p in secludedProperties ? undefined : Reflect.get(target, p, receiver)
-					},
-					set(target, p, value, receiver) {
-						Object.defineProperty(p in secludedProperties ? receiver : target, p, {
-							value,
-							writable: true,
-							enumerable: true,
-							configurable: true
-						})
-						return true
-					},
-					getPrototypeOf: (target) => target
-				})
+				//@ts-expect-error ProxyHandler<this> ??
+				protoProxy = new Proxy(this, secludedProxyHandler(base, secludedProperties))
 			let secluded: InstanceType<TBase>
 			/* Here, what happens:
 			`init.initialObject` is the instance of the secluded class who contains all its public properties

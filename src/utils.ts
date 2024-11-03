@@ -1,4 +1,4 @@
-import { Ctor } from './types'
+import { Ctor, KeySet } from './types'
 
 /**
  * Gives all the classes from the base up to just before Object
@@ -26,6 +26,9 @@ export function bottomLeg(ctor: Ctor) {
 	return last
 }
 
+/**
+ * Get the next property descriptor of `name` in the lineage
+ */
 export function nextInLine(ctor: Ctor, name: PropertyKey) {
 	let rv: PropertyDescriptor | undefined
 	for (const uniLeg of linearLeg(ctor))
@@ -33,6 +36,9 @@ export function nextInLine(ctor: Ctor, name: PropertyKey) {
 			return rv === secludedPropertyDescriptor ? undefined : rv
 }
 
+/**
+ * Get the fLegs of the bottom class of this lineage
+ */
 export function fLegs(ctor: Ctor) {
 	return allFLegs.get(bottomLeg(ctor))
 }
@@ -66,36 +72,30 @@ export function nextInFLeg(ctor: Ctor, name: PropertyKey, diamond: Ctor) {
 
 export const allFLegs = new WeakMap<Ctor, Ctor[]>()
 
-// Deflect all actions so they they apply to `target` instead of `receiver`
-export const forwardProxyHandler: ProxyHandler<Ctor> = {
-	get(target, p) {
-		return Reflect.get(target, p)
-	},
-	set(target, p, v) {
-		return Reflect.set(target, p, v)
-	},
-	getOwnPropertyDescriptor(target, p) {
-		return Reflect.getOwnPropertyDescriptor(target, p)
-	},
-	getPrototypeOf(target) {
-		return Reflect.getPrototypeOf(target)
-	},
-	ownKeys(target) {
-		return Reflect.ownKeys(target)
-	},
-	has(target, p) {
-		return Reflect.has(target, p)
-	},
-	isExtensible(target) {
-		return Reflect.isExtensible(target)
-	},
-	preventExtensions(target) {
-		return Reflect.preventExtensions(target)
-	},
-	defineProperty(target, p, attributes) {
-		return Reflect.defineProperty(target, p, attributes)
-	},
-	deleteProperty(target, p) {
-		return Reflect.deleteProperty(target, p)
-	}
+export function secludedProxyHandler<TBase extends Ctor>(
+	base: TBase | null,
+	secludedProperties: KeySet
+) {
+	return {
+		get(target, p, receiver) {
+			if (base && p in base.prototype) {
+				const pd = nextInLine(base, p)
+				return pd && (pd.value || pd.get!.call(receiver))
+			}
+			return p in secludedProperties ? undefined : Reflect.get(target, p, receiver)
+		},
+		set(target, p, value, receiver) {
+			if (p in secludedProperties)
+				Object.defineProperty(receiver, p, {
+					value,
+					writable: true,
+					enumerable: true,
+					configurable: true
+				})
+			else return Reflect.set(target, p, value, target)
+			return true
+		},
+		getPrototypeOf: (target) => target
+	} as ProxyHandler<Ctor>
 }
+export const emptySecludedProxyHandler = secludedProxyHandler(null, {})

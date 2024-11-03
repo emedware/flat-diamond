@@ -66,7 +66,8 @@ function testScenario(t: Scenario, P: { secluded(t: any): any }) {
 	expect(pp?.pubFld).toBe(4)
 	//methods
 	expect(t.methodA()).toBe('yXaXb')
-	expect(() => (t as any).methodB()).toThrow()
+	//@ts-expect-error
+	expect(() => t.methodB()).toThrow()
 	return t
 }
 

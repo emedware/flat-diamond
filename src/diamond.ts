@@ -1,5 +1,5 @@
 import { Ctor, HasBases, Newable } from './types'
-import { allFLegs, bottomLeg, fLegs, forwardProxyHandler, nextInFLeg } from './utils'
+import { allFLegs, bottomLeg, emptySecludedProxyHandler, fLegs, nextInFLeg } from './utils'
 
 type BuildingStrategy = Map<Ctor, Ctor[]>
 let buildingDiamond: {
@@ -44,13 +44,6 @@ export function hasInstanceManager<Class extends Ctor>(cls: Class) {
 	}
 }
 
-function forwardTempTo(target: any, temp: any) {
-	if (target === temp) return
-	Object.defineProperties(target, Object.getOwnPropertyDescriptors(temp))
-	for (const p of Object.getOwnPropertyNames(temp)) delete temp[p]
-	Object.setPrototypeOf(temp, new Proxy(target, forwardProxyHandler))
-}
-
 export default function Diamond<TBases extends Ctor[]>(
 	...baseClasses: TBases
 ): Newable<HasBases<TBases>> {
@@ -90,12 +83,28 @@ export default function Diamond<TBases extends Ctor[]>(
 				// `super()`: Builds the temporary objects and import all their properties
 				for (const subs of responsibility) {
 					buildingDiamond = fLegs(subs) ? locallyStoredDiamond : null
-					const temp = new (subs as any)(...args) // `any` because declared as an abstract class
+					//@ts-expect-error subs is declared as abstract
+					const temp = new subs(...args)
 					// Even if `Diamond` managed: property initializers do not go through proxy
-					forwardTempTo(locallyStoredDiamond.built, temp)
+					if (locallyStoredDiamond.built !== temp) {
+						// import properties from temp object
+						Object.defineProperties(
+							locallyStoredDiamond.built,
+							Object.getOwnPropertyDescriptors(temp)
+						)
+						// Empty the object and make it react as if it was the diamond.
+						// Useless in most cases, but if that object was given out as a reference, it can still
+						// be interacted with
+						for (const p of Object.getOwnPropertyNames(temp)) delete temp[p]
+						// TODO: test this fake "head"
+						Object.setPrototypeOf(
+							temp,
+							new Proxy(locallyStoredDiamond.built, emptySecludedProxyHandler)
+						)
+					}
 				}
 			} finally {
-				forwardTempTo(locallyStoredDiamond.built, this)
+				//In the constructor method and in the field initializers, we can build diamonds, but not *this* diamond
 				buildingDiamond = null
 			}
 			return locallyStoredDiamond.built

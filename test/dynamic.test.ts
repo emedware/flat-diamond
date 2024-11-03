@@ -36,9 +36,12 @@ test('dynamic diamond', () => {
 		return x + 42
 	}
 	expect(d.method(0)).toBe(46)
-	expect(() => (d as any).unexpected()).toThrow()
-	;(B.prototype as any).unexpected = function (this: B) {
+	//@ts-ignore
+	expect(() => d.unexpected()).toThrow()
+	//@ts-ignore
+	B.prototype.unexpected = function (this: B) {
 		return 202
 	}
-	expect((d as any).unexpected()).toBe(202)
+	//@ts-ignore
+	expect(d.unexpected()).toBe(202)
 })
