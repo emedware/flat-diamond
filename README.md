@@ -284,6 +284,25 @@ Yes, it's okay...
 
 So, secluding can also be useful when some class specify different methods with the same name, so that each has its unique version (unaccessible from outside)
 
-# Participation
+# Real world
+
+## Purpose
+
+Typescript offer simpler (typescript-wise) but more complex (development-wise) ways to reach the same functionalities (ie. [mixins](https://www.typescriptlang.org/docs/handbook/mixins.html))
+
+In some production environment, these solutions might be preferred.
+
+Knowing that the whole documentation here is about rarely occurring edge cases and that [two chapters](#super) are usually enough to understand and use the library, `flat-diamond` here wish to offer:
+
+- A clean and working way to approach multiple inheritance - theoretically and practically
+- A tool to write a highly readable, maintainable and dynamic code. Mainly for prototyping but that can fit in most production case.
+  > Some times, it's cheaper to just buy another RAM stick than to spend a week on an optimization
+- Automate bookkeeping of types - task that can be tedious in TypeScript
+
+`flat-diamond` does not create security issues nor performance bottlenecks. It might add ~5Kb of code to load, it might add a little overtime on some function calls - but if a code does a bit more than calling NOOP billions of times, it is negligible.
+
+## Participation
 
 The best (even if not only) way to report a bug is to PR a failing unit test.
+
+The best way to participate is still to [leave a note](https://github.com/emedware/flat-diamond/discussions) when the package does not meet the expectations/answer questions.

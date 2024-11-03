@@ -9,7 +9,7 @@
 			"types": "./lib/index.d.ts",
 			"default": "./lib/cjs.js"
 		},
-		"./ts": "./src/index.ts"
+		"./src": "./src/index.ts"
 	},
 	"description": "TypeScript diamond inheritance",
 	"type": "module",
