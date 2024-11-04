@@ -1,4 +1,4 @@
-import Diamond, { diamondHandler, hasInstanceManager } from './diamond'
+import Diamond from './diamond'
 import { Ctor, KeySet, Newable } from './types'
 import {
 	allFLegs,
@@ -59,13 +59,6 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 	const privates = new WeakMap<GateKeeper, TBase>(),
 		diamondSecluded = !fLegs(base),
 		diamond = diamondSecluded ? Diamond(PropertyCollector) : PropertyCollector
-	// We make sure `Secluded(X).secluded(x) instanceof X`
-	if (diamondSecluded) {
-		Object.defineProperty(base, Symbol.hasInstance, {
-			value: hasInstanceManager(base),
-			configurable: true
-		})
-	}
 	class GateKeeper extends diamond {
 		static secluded(obj: TBase): TBase | undefined {
 			return privates.get(obj)
@@ -178,7 +171,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			if (p in secludedProperties && actor.domain === 'private')
 				// If we arrive here, it means it's private but not set in the private part
 				return undefined
-			if (allFLegs.has(actor.public)) return diamondHandler.get(bottomLeg(target), p, receiver)
+			if (allFLegs.has(actor.public)) return Reflect.get(bottomLeg(target), p, receiver)
 			// If we arrive here, it means it's public but not set in the public part
 			return undefined
 		},
@@ -202,8 +195,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 				})
 				return true
 			}
-			if (allFLegs.has(actor.public))
-				return diamondHandler.set(bottomLeg(target), p, value, receiver)
+			if (allFLegs.has(actor.public)) return Reflect.set(bottomLeg(target), p, value, receiver)
 			Object.defineProperty(actor.public, p, {
 				value,
 				writable: true,

@@ -1,5 +1,15 @@
 import { Ctor, HasBases, Newable } from './types'
-import { allFLegs, bottomLeg, emptySecludedProxyHandler, fLegs, nextInFLeg } from './utils'
+import {
+	allFLegs,
+	bottomLeg,
+	emptySecludedProxyHandler,
+	fLegs,
+	hasInstanceManager,
+	hasInstanceManagers,
+	linearLeg,
+	manageHasInstance,
+	nextInFLeg
+} from './utils'
 
 type BuildingStrategy = Map<Ctor, Ctor[]>
 let buildingDiamond: {
@@ -7,12 +17,13 @@ let buildingDiamond: {
 	strategy: BuildingStrategy
 } | null = null
 
-export const diamondHandler: {
+const diamondHandler: {
 	getPrototypeOf(target: Ctor): Ctor
 	get(target: Ctor, p: PropertyKey, receiver: Ctor): any
 	set(target: Ctor, p: PropertyKey, v: any, receiver: Ctor): boolean
 } & ProxyHandler<Ctor> = {
 	get(target, p, receiver) {
+		if (p === 'constructor') return Object
 		const pd = nextInFLeg(receiver.constructor, p, target)
 		return pd && ('value' in pd ? pd.value : 'get' in pd ? pd.get!.call(receiver) : undefined)
 	},
@@ -31,16 +42,6 @@ export const diamondHandler: {
 	},
 	getPrototypeOf(target) {
 		return Object
-	}
-}
-
-export function hasInstanceManager<Class extends Ctor>(cls: Class) {
-	return (obj: any) => {
-		if (!obj || typeof obj !== 'object') return false
-		const objBottom = bottomLeg(obj.constructor)
-		if (objBottom === cls) return true
-		const fLeg = allFLegs.get(objBottom)
-		return Boolean(fLeg && fLeg.some((base) => bottomLeg(base) === cls))
 	}
 }
 
@@ -73,6 +74,10 @@ export default function Diamond<TBases extends Ctor[]>(
 			const responsibility = buildingDiamond
 				? buildingDiamond!.strategy.get(this.constructor as Ctor)!
 				: myResponsibility
+			if (!responsibility) {
+				throw new Error(`Inconsistent diamond hierarchy.
+This might happen if a diamond is created from another constructor before its 'super(...)' is called.`)
+			}
 			if (!buildingDiamond)
 				buildingDiamond = {
 					built: this,
@@ -107,11 +112,15 @@ export default function Diamond<TBases extends Ctor[]>(
 				//In the constructor method and in the field initializers, we can build diamonds, but not *this* diamond
 				buildingDiamond = null
 			}
+			// Value used by `this` on `super(...)` return
 			return locallyStoredDiamond.built
 		}
 		static [Symbol.hasInstance] = hasInstanceManager(Diamond)
 	}
+	hasInstanceManagers.add(Diamond)
 	allFLegs.set(Diamond, bases)
+	for (const base of baseClasses)
+		if (!fLegs(base)) for (const ctor of linearLeg(base)) if (!manageHasInstance(ctor)) break
 	/**
 	 * Constructs the building strategy for building this class and only this class with its specific legacy
 	 */

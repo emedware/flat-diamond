@@ -99,3 +99,37 @@ export function secludedProxyHandler<TBase extends Ctor>(
 	} as ProxyHandler<Ctor>
 }
 export const emptySecludedProxyHandler = secludedProxyHandler(null, {})
+
+export function hasInstanceManager<Class extends Ctor>(
+	cls: Class,
+	original?: (obj: any) => boolean
+) {
+	function nativeLinear(ctor: Ctor) {
+		// linearLeg ignore last diamond (that we need)
+		for (; ctor !== Object; ctor = Object.getPrototypeOf(ctor.prototype).constructor)
+			if (ctor === cls) return true
+		return false
+	}
+	const inheritsFrom = original
+		? (ctor: Ctor) => nativeLinear(ctor) || original(ctor.prototype)
+		: (ctor: Ctor) => nativeLinear(ctor)
+	return (obj: any) => {
+		if (!obj || typeof obj !== 'object') return false
+		if (inheritsFrom(obj.constructor)) return true
+		const fLeg = fLegs(obj.constructor)
+		return Boolean(fLeg && fLeg.some(inheritsFrom))
+	}
+}
+export const hasInstanceManagers = new WeakSet<Ctor>()
+export function manageHasInstance(ctor: Ctor) {
+	if (hasInstanceManagers.has(ctor)) return false
+	hasInstanceManagers.add(ctor)
+	Object.defineProperty(ctor, Symbol.hasInstance, {
+		value: hasInstanceManager(
+			ctor,
+			ctor.hasOwnProperty(Symbol.hasInstance) ? ctor[Symbol.hasInstance] : undefined
+		),
+		configurable: true
+	})
+	return true
+}
