@@ -103,15 +103,9 @@ When constructing `Xb`, the constructor of `B` will be invoked with `this` being
 
 We can of course `extend Diamond(A, B, C, D, E, ...theRest)`.
 
-### `instanceof` does not work anymore!
+### `instanceof` does not work anymore!?
 
-It still works. Well, it indeed works - but only if the class being tested is a `Diamond` one (if it inherits from `Diamond(...)` or if one of its direct ancestor does).
-
-If not, there is a helper function for the super-generic case.
-
-```ts
-import Diamond, { instanceOf } from 'flat-diamond'
-```
+Yes, it does. Classes involved in the `Diamond` process even have their `[Symbol.hasInstance]` overridden in order to be sure.
 
 ### But I modify my prototypes dynamically...
 
@@ -133,6 +127,11 @@ class D2 extends D(X1, X3, D1, X4, X2)
 Here, the flat legacy of `D2` will be `D1 - X1 - X3 - X2 - X4`. The fact that `D1` specifies it inherits from `X1` is promised to be kept, the order in the arguments is surely going to happen if the situation is not too complex.
 
 A real order conflict would imply circular reference who is impossible.
+
+> For the details if interested - using the vertical analogy that "classes are built upon an ancestor" (high=descendant) :
+>
+> - Inheritance is promised (if a class is built upon another one, it will appear higher in the flat legacy)
+> - When two classes are given in a list (knowing each classes are flat lineage), the highest class of the first lineage will appear before the lowest class of the second one.
 
 ### Dealing with non-`Diamond`-ed classes
 
@@ -186,6 +185,10 @@ D2(0)
     X3(1)
         X2(2)
 ```
+
+#### Non diamond vs diamond constructors
+
+> Diamond' constructors du not really matter if a class is "descendant" somehow in the 2D hierarchy, only in the 1D (flat) one. It means that any constructor transforming the arguments transform it for _all_ the classes that comes afterward in the flat hierarchy. Thus, classes that are no `Diamond`ed will not modify the constructor' arguments, but only for their direct descendants. Also, if their descendants appear twice (inherited directly twice in the hierarchy), their constructors will be called twice, each time for each argument.
 
 ### Construction concern
 

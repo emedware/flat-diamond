@@ -1,4 +1,4 @@
-import D, { instanceOf, Seclude } from '../src'
+import D, { Seclude } from '../src'
 class A1 {}
 class A2 extends A1 {}
 class B1 {}
@@ -15,7 +15,6 @@ const x1 = new X1(),
 	x2 = new X2()
 
 test('instanceof', () => {
-	/*
 	expect(x1 instanceof X1).toBe(true)
 	expect(x1 instanceof X2).toBe(false)
 	expect(x2 instanceof X1).toBe(false)
@@ -25,7 +24,7 @@ test('instanceof', () => {
 	expect(x1 instanceof B1).toBe(true)
 	expect(x1 instanceof C1).toBe(false)
 	expect(x2 instanceof A1).toBe(true)
-	expect(x2 instanceof B1).toBe(true)*/
+	expect(x2 instanceof B1).toBe(true)
 	expect(x2 instanceof A2).toBe(false)
 	expect(x2 instanceof B2).toBe(false)
 	expect(x2 instanceof C1).toBe(true)

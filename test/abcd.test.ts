@@ -2,7 +2,7 @@ import Diamond from '../src'
 import { log, logs } from './logger'
 
 abstract class A {
-	constructor() {
+	constructor(public arg: string) {
 		this.log('construct A')
 	}
 	log(...args: any[]) {
@@ -16,8 +16,8 @@ abstract class A {
 	abstract absFunc(x: number): number
 }
 abstract class B extends Diamond(A) {
-	constructor() {
-		super()
+	constructor(arg: string) {
+		super(arg + 'B')
 		this.log('construct B')
 	}
 	absFunc(x: number): number {
@@ -30,8 +30,8 @@ abstract class B extends Diamond(A) {
 	}
 }
 abstract class C extends Diamond(A) {
-	constructor() {
-		super()
+	constructor(arg: string) {
+		super(arg + 'C')
 		this.log('construct C')
 	}
 	fieldC = true
@@ -42,8 +42,8 @@ abstract class C extends Diamond(A) {
 }
 //@ts-expect-error Here, if D extends diamond(B, C), then it's not considered abstract - cf README.md#abstraction
 class D extends Diamond(C, B) {
-	constructor() {
-		super()
+	constructor(arg: string) {
+		super(arg + 'D')
 		this.log('construct D')
 	}
 	fieldD = true
@@ -58,7 +58,7 @@ beforeEach(() => {
 })
 
 test('call orders', () => {
-	const obj = new D()
+	const obj = new D('o')
 	expect(logs()).toEqual([
 		'[class=A] construct A',
 		'[class=D] construct B',
@@ -67,6 +67,7 @@ test('call orders', () => {
 	])
 	expect([obj.fieldA, obj.fieldB, obj.fieldC, obj.fieldD]).toEqual([true, true, true, true])
 	expect(obj.func(0)).toBe(6)
+	expect(obj.arg).toBe('oDCB')
 	expect(logs()).toEqual([
 		'[class=D] func D',
 		'[class=D] func C',
