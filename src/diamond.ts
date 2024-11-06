@@ -45,6 +45,11 @@ const diamondHandler: {
 	}
 }
 
+/**
+ * When secluding a class whose linear legacy ends on a diamond, this is used not to seclude further than the diamond
+ */
+export let lastDiamondProperties: PropertyDescriptorMap | null
+
 export default function Diamond<TBases extends Ctor[]>(
 	...baseClasses: TBases
 ): Newable<HasBases<TBases>> {
@@ -71,6 +76,7 @@ export default function Diamond<TBases extends Ctor[]>(
 	const myResponsibility: Ctor[] = []
 	class Diamond {
 		constructor(...args: any[]) {
+			lastDiamondProperties = null
 			const responsibility = buildingDiamond
 				? buildingDiamond!.strategy.get(this.constructor as Ctor)!
 				: myResponsibility
@@ -112,6 +118,7 @@ This might happen if a diamond is created from another constructor before its 's
 				//In the constructor method and in the field initializers, we can build diamonds, but not *this* diamond
 				buildingDiamond = null
 			}
+			lastDiamondProperties = Object.getOwnPropertyDescriptors(locallyStoredDiamond.built)
 			// Value used by `this` on `super(...)` return
 			return locallyStoredDiamond.built
 		}
@@ -131,6 +138,5 @@ This might happen if a diamond is created from another constructor before its 's
 	}
 
 	Object.setPrototypeOf(Diamond.prototype, new Proxy(Diamond, diamondHandler))
-
 	return <new (...args: any[]) => HasBases<TBases>>(<unknown>Diamond)
 }

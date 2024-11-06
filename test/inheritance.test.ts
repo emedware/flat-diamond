@@ -1,4 +1,4 @@
-import D from '../src'
+import Diamond from '../src'
 import { log, logs } from './logger'
 
 abstract class Parent {
@@ -18,7 +18,7 @@ class X {
 	}
 }
 
-class Dad extends D(Parent, X) {
+class Dad extends Diamond(Parent, X) {
 	constructor() {
 		super()
 		log('dad', 'constructor')
@@ -36,7 +36,7 @@ class Dad extends D(Parent, X) {
 		return super.value
 	}
 }
-class Mum extends D(Parent) {
+class Mum extends Diamond(Parent) {
 	constructor() {
 		super()
 		log('mum', 'constructor')
@@ -55,7 +55,7 @@ class Mum extends D(Parent) {
 	}
 }
 
-class Child extends D(Dad, Mum) {
+class Child extends Diamond(Dad, Mum) {
 	constructor() {
 		super()
 		log('child', 'constructor')
@@ -73,7 +73,7 @@ class Child extends D(Dad, Mum) {
 		return super.value
 	}
 }
-/*
+
 test('constructors', () => {
 	logs()
 	const child = new Child()
@@ -96,7 +96,7 @@ test('setters', () => {
 	logs()
 	child.value = 42
 	expect(logs()).toEqual(['child setter', 'dad setter', 'mum setter'])
-})*/
+})
 test('getters', () => {
 	const child = new Child()
 	logs()

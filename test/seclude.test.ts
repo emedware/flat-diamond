@@ -46,7 +46,7 @@ class X {
 }
 const P = Seclude(X, ['prvFld', 'methodB'])
 
-function testScenario(t: Scenario, P: { secluded(t: any): any }) {
+function testScenario(t: Scenario, P: { (t: any): any }) {
 	expect(t.pubFld).toBe(0)
 	expect(t.accFld).toBe(8)
 	expect(t.prvFld).toBe(10)
@@ -61,7 +61,7 @@ function testScenario(t: Scenario, P: { secluded(t: any): any }) {
 	t.setPrvFld(5)
 	expect(t.accFld).toBe(5)
 	expect(t.prvFld).toBe(2)
-	const pp = P.secluded(t)
+	const pp = P(t)
 	expect(pp?.prvFld).toBe(5)
 	expect(pp?.pubFld).toBe(4)
 	//methods
@@ -86,7 +86,7 @@ test('leg-less', () => {
 	let t = testScenario(new Y(), P)
 	expect(t instanceof X).toBe(true)
 	expect(builtX! instanceof X).toBe(true)
-	expect(builtX).toBe(P.secluded(t))
+	expect(builtX).toBe(P(t))
 
 	// This is no code to run but to type-check
 	function tsTest() {
@@ -117,11 +117,11 @@ test('leg-half', () => {
 	let t = testScenario(new D(), P)
 	expect(t instanceof X).toBe(true)
 	expect(builtX! instanceof X).toBe(true)
-	expect(builtX).toBe(P.secluded(t))
+	expect(builtX).toBe(P(t))
 	t = testScenario(new E(), P)
 	expect(t instanceof X).toBe(true)
 	expect(builtX! instanceof X).toBe(true)
-	expect(builtX).toBe(P.secluded(t))
+	expect(builtX).toBe(P(t))
 })
 
 test('leg-full', () => {
@@ -155,7 +155,7 @@ test('leg-full', () => {
 			this.prvFld = v
 		}
 	}
-	const P = Seclude(X, ['prvFld', 'methodB'])
+	const P = Seclude(XD, ['prvFld', 'methodB'])
 	class Y {
 		prvFld = 10
 	}

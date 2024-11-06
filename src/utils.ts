@@ -117,7 +117,9 @@ export function hasInstanceManager<Class extends Ctor>(
 		if (!obj || typeof obj !== 'object') return false
 		if (inheritsFrom(obj.constructor)) return true
 		const fLeg = fLegs(obj.constructor)
-		return Boolean(fLeg && fLeg.some(inheritsFrom))
+		if (fLeg && fLeg.some(inheritsFrom)) return true
+		const protoObj = Object.getPrototypeOf(obj)
+		return obj.constructor.prototype !== protoObj && protoObj instanceof cls
 	}
 }
 export const hasInstanceManagers = new WeakSet<Ctor>()

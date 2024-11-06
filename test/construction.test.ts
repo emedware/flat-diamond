@@ -1,4 +1,4 @@
-import D from '../src'
+import Diamond from '../src'
 import { log, logs } from './logger'
 
 beforeAll(() => {
@@ -24,14 +24,14 @@ test('construction', () => {
 		}
 	}
 
-	class Y extends D(X) {
+	class Y extends Diamond(X) {
 		constructor(aValue: string) {
 			super(aValue + ' and Y')
 			log('Y:', aValue)
 		}
 	}
 	let constructedObjectFromA: any = null
-	class A extends D() {
+	class A extends Diamond() {
 		constructor(aValue: string) {
 			super(aValue + ' and A')
 			constructedObjectFromA = this
@@ -39,14 +39,14 @@ test('construction', () => {
 		}
 	}
 
-	class B extends D(End2, A) {
+	class B extends Diamond(End2, A) {
 		constructor(aValue: string) {
 			super(aValue + ' and B')
 			log('B:', aValue)
 			new Y('B...')
 		}
 	}
-	class C extends D(B, End1, A) {
+	class C extends Diamond(B, End1, A) {
 		constructor(aValue: string) {
 			super(aValue + ' and C')
 			log('C:', aValue)
@@ -68,7 +68,7 @@ test('construction', () => {
 })
 
 test('sub-diamond', () => {
-	class X extends D() {
+	class X extends Diamond() {
 		constructor() {
 			const o = new Object()
 			super()
@@ -82,7 +82,7 @@ test('sub-diamond', () => {
 			this.x2 = new X()
 		}
 	}
-	class A extends D(Y) {
+	class A extends Diamond(Y) {
 		y1: Y = new Y()
 		y2: any
 		constructor() {

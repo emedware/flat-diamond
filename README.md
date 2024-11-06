@@ -50,12 +50,12 @@ class C extends Diamond(A, B) { ... }
 Yes, `super` still works and will have a dynamic meaning depending on where it is used.
 
 ```ts
-import D from `flat-diamond`
+import Diamond from `flat-diamond`
 
-class X extends D() { method() {} }
-class A extends D(X) { method() { [...]; super.method() } }    // Here will be the change
-class B extends D(X) { method() { [...]; super.method() } }
-class C extends D(A, B) {}
+class X extends Diamond() { method() {} }
+class A extends Diamond(X) { method() { [...]; super.method() } }    // Here will be the change
+class B extends Diamond(X) { method() { [...]; super.method() } }
+class C extends Diamond(A, B) {}
 let testA = new A(),    // A - X
     testC = new C()     // C - A - B - X
 testA.method()
@@ -84,10 +84,10 @@ Ie., this is the difference between these two situations :
 
 ```ts
 class A { constructor() {...} }
-class Xa extends D(A) { constructor() { super(); ...} }
+class Xa extends Diamond(A) { constructor() { super(); ...} }
 
-class B extends D() { constructor() { super(); ...} }
-class Xb extends D(B) { constructor() { super(); ...} }
+class B extends Diamond() { constructor() { super(); ...} }
+class Xb extends Diamond(B) { constructor() { super(); ...} }
 
 let testA = new Xa(),
     testB = new Xb()
@@ -97,7 +97,7 @@ When constructing `Xa`, the constructor of `A` will be invoked with `this` being
 
 When constructing `Xb`, the constructor of `B` will be invoked with `this` being (after `super()`) the constructed diamond (here, `Xb`)
 
-> Note: This is the only difference made by using `extend D()` for root classes
+> Note: This is the only difference made by using `extend Diamond()` for root classes
 
 ## What are the limits ?
 
@@ -105,7 +105,7 @@ We can of course `extend Diamond(A, B, C, D, E, ...theRest)`.
 
 ### `instanceof` does not work anymore!?
 
-Yes, it does. Classes involved in the `Diamond` process even have their `[Symbol.hasInstance]` overridden in order to be sure.
+Yes, it does. Classes involved in the `Diamond` process even have their `[Symbol.hasInstance]` overridden in order to take the new structure into account.
 
 ### But I modify my prototypes dynamically...
 
@@ -118,28 +118,23 @@ Resolved by stating that the argument order of the function `Diamond(...)` is _c
 ```ts
 class X1 { ... }
 class X2 { ... }
-class D1 extends D(X1, X2) { ... }
+class D1 extends Diamond(X1, X2) { ... }
 class X3 { ... }
 class X4 { ... }
-class D2 extends D(X1, X3, D1, X4, X2)
+class D2 extends Diamond(X1, X3, D1, X4, X2)
 ```
 
 Here, the flat legacy of `D2` will be `D1 - X1 - X3 - X2 - X4`. The fact that `D1` specifies it inherits from `X1` is promised to be kept, the order in the arguments is surely going to happen if the situation is not too complex.
 
 A real order conflict would imply circular reference who is impossible.
 
-> For the details if interested - using the vertical analogy that "classes are built upon an ancestor" (high=descendant) :
->
-> - Inheritance is promised (if a class is built upon another one, it will appear higher in the flat legacy)
-> - When two classes are given in a list (knowing each classes are flat lineage), the highest class of the first lineage will appear before the lowest class of the second one.
-
 ### Dealing with non-`Diamond`-ed classes
 
 ```ts
-class X extends D() { ... }
+class X extends Diamond() { ... }
 class Y extends X { ... }
 class Z extends X { ... }
-class A extends D(X, Y) { ... }
+class A extends Diamond(X, Y) { ... }
 ```
 
 Well, the constructor and `super.method(...)` of `X` will be called twice.... Like if it did not extend `D()`
@@ -168,10 +163,10 @@ When a `Diamond`-ed class constructor passes an argument to `super`, this argume
 
 ```ts
 class X1 { constructor(n: number) { ... } }
-class D1 extends D(X1) { constructor(n: number) { super(n+1); ... } }
+class D1 extends Diamond(X1) { constructor(n: number) { super(n+1); ... } }
 class X2 { constructor(n: number) { ... } }
 class X3 extends X2 { constructor(n: number) { super(n+2); ... } }
-class D2 extends D(X3, D1) { constructor(n: number) { super(n+1); ... } }
+class D2 extends Diamond(X3, D1) { constructor(n: number) { super(n+1); ... } }
 
 let test = new D2(0)
 ```
@@ -188,7 +183,7 @@ D2(0)
 
 #### Non diamond vs diamond constructors
 
-> Diamond' constructors du not really matter if a class is "descendant" somehow in the 2D hierarchy, only in the 1D (flat) one. It means that any constructor transforming the arguments transform it for _all_ the classes that comes afterward in the flat hierarchy. Thus, classes that are no `Diamond`ed will not modify the constructor' arguments, but only for their direct descendants. Also, if their descendants appear twice (inherited directly twice in the hierarchy), their constructors will be called twice, each time for each argument.
+> Diamond' constructors do not really matter if a class is "descendant" somehow in the 2D hierarchy, only in the 1D (flat) one. It means that any constructor transforming the arguments transform it for _all_ the classes that comes afterward in the flat hierarchy. Thus, classes that are no `Diamond`ed will not modify the constructor' arguments, but only for their direct descendants. Also, if their descendants appear twice (inherited directly twice in the hierarchy), their constructors will be called twice, each time for each argument.
 
 ### Construction concern
 
@@ -208,7 +203,7 @@ Don't make field conflicts. Just don't.
 
 Here it is tricky, and that's where _seclusion_ comes in. Let's speak about seclusion without speaking of diamond - and, if you wish, the seclusion works without the need of involving `Diamond`. (though it is also completely integrated)
 
-Let's say we want a `DuckCourier` to implement `Plane`, and end up with a conflict of `wingSpan` (the one of the duck and the one of the device mounted him, the `Plane` one)
+Let's say we want a `DuckCourier` to implement `Plane`, and end up with a conflict of `wingSpan` (the one of the duck and the one of the device mounted on him, the `Plane` one)
 
 A pure and simple `class DuckCourier extends Plane` would have a field conflict. So, instead, seclusion will be used :
 
@@ -218,7 +213,7 @@ import { Seclude } from 'flat-diamond'
 class DuckCourier extends Seclude(Plane, ['wingSpan']) { ... }
 ```
 
-As simple as that, methods (as well as accessors) of `Plane` and `DuckCourier` will access two different values when accessing `this.wingSpan`
+Et voilà, methods (as well as accessors) of `Plane` and `DuckCourier` will access two different values when accessing `this.wingSpan`
 
 ## But ... How ? And, how can I ...
 
@@ -226,22 +221,22 @@ When a secluded class is implemented (here, a `Plane`), the instance prototype w
 
 Because of prototyping, `Secluded<Plane>` has access to all the functionalities of `DuckCourier` (and therefore of `Plane`) while never interfering with `DuckCourier::wingSpan`. Also, having several secluded class in the legacy list will only create several "heads" who will share a prototype.
 
-`DuckCourier` on another hand, _can_ interfere with `Plane::wingSpan` if needed thanks to the `secluded` exposed by the `Secluded` class.
+`DuckCourier` on another hand, _can_ interfere with `Plane::wingSpan` if needed thanks to the fact a `Secluded` class is also a function to retrieve a private part.
 
 ```ts
 import { Seclude } from 'flat-diamond'
 
 class Plane {
-	wingSpan: number = 200
+    wingSpan: number = 200
 }
 
 const MountedPlane = Seclude(Plane, ['wingSpan'])
 
 class DuckCourier extends MountedPlane {
-	wingSpan: number = 80
-	get isDeviceSafe(): boolean {
-		return MountedPlane.secluded(this).wingSpan > 2 * this.wingSpan
-	}
+    wingSpan: number = 80
+    get isDeviceSafe(): boolean {
+        return MountedPlane(this).wingSpan > 2 * this.wingSpan
+    }
 }
 ```
 
@@ -267,10 +262,10 @@ In some production environment, these solutions might be preferred.
 
 Knowing that the whole documentation here is about rarely occurring edge cases and that [two chapters](#super) are usually enough to understand and use the library, `flat-diamond` here wish to offer:
 
-- A clean and working way to approach multiple inheritance - theoretically and practically
-- A tool to write a highly readable, maintainable and dynamic code. Mainly for prototyping but that can fit in most production case.
-  > Some times, it's cheaper to just buy another RAM stick than to spend a week on an optimization
-- Automate bookkeeping of types - task that can be tedious in TypeScript
+-   A clean and working way to approach multiple inheritance - theoretically and practically
+-   A tool to write a highly readable, maintainable and dynamic code. Mainly for prototyping but that can fit in most production case.
+    > Some times, it's cheaper to just buy another RAM stick than to spend a week on an optimization
+-   Automate bookkeeping of types - task that can be tedious in TypeScript
 
 `flat-diamond` does not create security issues nor performance bottlenecks. It might add ~5Kb of code to load, it might add a little overtime on some function calls - but if a code does a bit more than calling NOOP billions of times, it is negligible.
 

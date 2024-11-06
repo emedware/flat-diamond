@@ -1,6 +1,6 @@
 {
 	"name": "flat-diamond",
-	"version": "1.0.8",
+	"version": "1.0.9",
 	"types": "./lib/index.d.ts",
 	"exports": {
 		".": {

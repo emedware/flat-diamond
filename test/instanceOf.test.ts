@@ -34,7 +34,9 @@ test('secluded', () => {
 	class X {}
 	const S = Seclude(X)
 	const s = new S()
-	expect(s instanceof X).toBe(true)
 	expect(s instanceof S).toBe(true)
-	expect(S.secluded(s) instanceof X).toBe(true)
+	expect(s instanceof X).toBe(true)
+	expect(S(s) instanceof S).toBe(true)
+	// Still wondering... Is `MountedPlane` (a `Plane` without `wingSpan`) a `Plane` ?
+	expect(S(s) instanceof X).toBe(true)
 })

@@ -1,7 +1,7 @@
-import D from '../src'
+import Diamond from '../src'
 import { log, logs } from './logger'
 
-class Animal extends D() {
+class Animal extends Diamond() {
 	get actions(): string[] {
 		return ['eat', 'sleep']
 	}
@@ -10,7 +10,7 @@ class Animal extends D() {
 	}
 }
 
-class FlyingAnimal extends D(Animal) {
+class FlyingAnimal extends Diamond(Animal) {
 	get actions(): string[] {
 		return [...super.actions, 'fly']
 	}
@@ -20,7 +20,7 @@ class FlyingAnimal extends D(Animal) {
 	}
 }
 
-class SwimmingAnimal extends D(Animal) {
+class SwimmingAnimal extends Diamond(Animal) {
 	get actions(): string[] {
 		return [...super.actions, 'swim']
 	}
@@ -31,7 +31,7 @@ class SwimmingAnimal extends D(Animal) {
 	}
 }
 
-class WalkingAnimal extends D(Animal) {
+class WalkingAnimal extends Diamond(Animal) {
 	get actions(): string[] {
 		return [...super.actions, 'walk']
 	}
@@ -42,7 +42,7 @@ class WalkingAnimal extends D(Animal) {
 	}
 }
 
-class Duck extends D(FlyingAnimal, SwimmingAnimal, WalkingAnimal) {
+class Duck extends Diamond(FlyingAnimal, SwimmingAnimal, WalkingAnimal) {
 	doIt() {
 		log('KWAK')
 		super.doIt()
@@ -61,7 +61,7 @@ test('inheritance', () => {
 	duck.doIt()
 	expect(logs()).toEqual(['KWAK', 'woosh', 'fshhh', 'picpoc', 'mniom'])
 
-	const beaver = new (D(WalkingAnimal, SwimmingAnimal))()
+	const beaver = new (Diamond(WalkingAnimal, SwimmingAnimal))()
 	expect(beaver.actions).toEqual(['eat', 'sleep', 'swim', 'walk'])
 	beaver.doIt()
 	expect(logs()).toEqual(['picpoc', 'fshhh', 'mniom'])
