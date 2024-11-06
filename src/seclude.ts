@@ -102,6 +102,8 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 		}
 	}
 	// In order to be treated as a function (to retrieve the private part), we have to use yet another proxy
+	// Making `GateKeeper` as a function directly and setting its prototype to `diamond` does not allow
+	// `super(...)` equivalent
 	const GateKeeperProxy = new Proxy(GateKeeper, {
 		apply(target, thisArg, argArray) {
 			return privates.get(argArray[0])

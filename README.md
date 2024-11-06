@@ -149,9 +149,7 @@ For the library, a class implementing another without going through the `Diamond
 
 The only problem still worked on is that if a class who has no implementation for an abstract method appears before another one who has an implementation, the method will be considered abstract (so the order of arguments for `Diamond(...)` matters here), even though a `//@ts-ignore` does the job.
 
-> :arrow_up: Btw, if someone could help me here... It's on `HasBases` type definition
-
-> Note: [It seems impossible...](https://stackoverflow.com/questions/79149281/complex-types-definition-abstract-method-filter)
+> Note: [It seems impossible to solve...](https://stackoverflow.com/questions/79149281/complex-types-definition-abstract-method-filter)
 
 ### Constructor parameters
 
