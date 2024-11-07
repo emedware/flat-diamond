@@ -1,4 +1,4 @@
-import { Ctor, KeySet } from './types'
+import type { Ctor, KeySet } from './types'
 
 export class LateSuperError extends Error {
 	constructor(message: string) {
@@ -24,9 +24,9 @@ export function* linearLeg(base: Ctor): IterableIterator<Ctor> {
 /**
  * Gets the bottom (uni-)legacy of a class just before Object (like Diamond)
  */
-export function bottomLeg(ctor: Ctor) {
+export function bottomLeg(base: Ctor) {
 	let last: Ctor = Object
-	for (; ctor !== Object; ctor = Object.getPrototypeOf(ctor.prototype).constructor) {
+	for (let ctor = base; ctor !== Object; ctor = Object.getPrototypeOf(ctor.prototype).constructor) {
 		if (allFLegs.has(ctor)) return ctor
 		last = ctor
 	}
@@ -38,9 +38,10 @@ export function bottomLeg(ctor: Ctor) {
  */
 export function nextInLine(ctor: Ctor, name: PropertyKey) {
 	let rv: PropertyDescriptor | undefined
-	for (const uniLeg of linearLeg(ctor))
-		if ((rv = Object.getOwnPropertyDescriptor(uniLeg.prototype, name)))
-			return rv === secludedPropertyDescriptor ? undefined : rv
+	for (const uniLeg of linearLeg(ctor)) {
+		rv = Object.getOwnPropertyDescriptor(uniLeg.prototype, name)
+		if (rv) return rv === secludedPropertyDescriptor ? undefined : rv
+	}
 }
 
 /**
@@ -53,7 +54,7 @@ export function fLegs(ctor: Ctor) {
 // Communication unique constant for `seclude` to communicate with `diamond`
 export const secludedPropertyDescriptor: PropertyDescriptor = {
 	value: undefined,
-	configurable: true
+	configurable: true,
 }
 
 /**
@@ -106,13 +107,13 @@ export function secludedProxyHandler<TBase extends Ctor>(
 					value,
 					writable: true,
 					enumerable: true,
-					configurable: true
+					configurable: true,
 				})
 				return true
 			}
 			return Reflect.set(target, p, value, target)
 		},
-		getPrototypeOf: (target) => target
+		getPrototypeOf: (target) => target,
 	} as ProxyHandler<Ctor>
 }
 export const emptySecludedProxyHandler = secludedProxyHandler(null, Object.create(null))
@@ -121,9 +122,9 @@ export function hasInstanceManager<Class extends Ctor>(
 	cls: Class,
 	original?: (obj: any) => boolean
 ) {
-	function nativeLinear(ctor: Ctor) {
+	function nativeLinear(base: Ctor) {
 		// linearLeg ignore last diamond (that we need)
-		for (; ctor !== Object; ctor = Object.getPrototypeOf(ctor.prototype).constructor)
+		for (let ctor = base; ctor !== Object; ctor = Object.getPrototypeOf(ctor.prototype).constructor)
 			if (ctor === cls) return true
 		return false
 	}
@@ -134,7 +135,7 @@ export function hasInstanceManager<Class extends Ctor>(
 		if (!obj || typeof obj !== 'object') return false
 		if (inheritsFrom(obj.constructor)) return true
 		const fLeg = fLegs(obj.constructor)
-		if (fLeg && fLeg.some(inheritsFrom)) return true
+		if (fLeg?.some(inheritsFrom)) return true
 		const protoObj = Object.getPrototypeOf(obj)
 		return obj.constructor.prototype !== protoObj && protoObj instanceof cls
 	}
@@ -146,9 +147,11 @@ export function manageHasInstance(ctor: Ctor) {
 	Object.defineProperty(ctor, Symbol.hasInstance, {
 		value: hasInstanceManager(
 			ctor,
-			ctor.hasOwnProperty(Symbol.hasInstance) ? ctor[Symbol.hasInstance] : undefined
+			Object.getOwnPropertySymbols(ctor).includes(Symbol.hasInstance)
+				? ctor[Symbol.hasInstance]
+				: undefined
 		),
-		configurable: true
+		configurable: true,
 	})
 	return true
 }

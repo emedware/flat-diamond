@@ -1,5 +1,9 @@
 # 1.0.10
 
+## Change
+
+- linter from prettier+eslint to biome
+
 ## Bug-fix
 
 -   `KeySet` now rooted on `Object.create(null)` instead of `{}` so that `'constructor' in secludedProperties` is false

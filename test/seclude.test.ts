@@ -32,7 +32,7 @@ class X {
 		return this.pubFld
 	}
 	methodA() {
-		return 'Xa' + this.methodB()
+		return `Xa${this.methodB()}`
 	}
 	methodB() {
 		return 'Xb'
@@ -46,7 +46,7 @@ class X {
 }
 const P = Seclude(X, ['prvFld', 'methodB'])
 
-function testScenario(t: Scenario, P: { (t: any): any }) {
+function testScenario(t: Scenario, P: (t: any) => any) {
 	expect(t.pubFld).toBe(0)
 	expect(t.accFld).toBe(8)
 	expect(t.prvFld).toBe(10)
@@ -79,18 +79,18 @@ test('leg-less', () => {
 		prvFld = 10
 		//@ts-ignore https://github.com/microsoft/TypeScript/issues/27689
 		methodA() {
-			return 'y' + super.methodA()
+			return `y${super.methodA()}`
 		}
 	}
 
-	let t = testScenario(new Y(), P)
+	const t = testScenario(new Y(), P)
 	expect(t instanceof X).toBe(true)
 	expect(builtX! instanceof X).toBe(true)
 	expect(builtX).toBe(P(t))
 
 	// This is no code to run but to type-check
 	function tsTest() {
-		let p = new P()
+		const p = new P()
 		p.pubFld++
 		//@ts-expect-error
 		P.prvFld++
@@ -104,13 +104,13 @@ test('leg-half', () => {
 	class D extends Diamond(P, Y) {
 		//@ts-ignore https://github.com/microsoft/TypeScript/issues/27689
 		methodA() {
-			return 'y' + super.methodA()
+			return `y${super.methodA()}`
 		}
 	}
 	class E extends Diamond(Y, P) {
 		//@ts-ignore https://github.com/microsoft/TypeScript/issues/27689
 		methodA() {
-			return 'y' + super.methodA()
+			return `y${super.methodA()}`
 		}
 	}
 
@@ -143,7 +143,7 @@ test('leg-full', () => {
 			return this.pubFld
 		}
 		methodA() {
-			return 'Xa' + this.methodB()
+			return `Xa${this.methodB()}`
 		}
 		methodB() {
 			return 'Xb'
@@ -162,13 +162,13 @@ test('leg-full', () => {
 	class D extends Diamond(P, Y) {
 		//@ts-ignore https://github.com/microsoft/TypeScript/issues/27689
 		methodA() {
-			return 'y' + super.methodA()
+			return `y${super.methodA()}`
 		}
 	}
 	class E extends Diamond(Y, P) {
 		//@ts-ignore https://github.com/microsoft/TypeScript/issues/27689
 		methodA() {
-			return 'y' + super.methodA()
+			return `y${super.methodA()}`
 		}
 	}
 

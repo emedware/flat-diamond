@@ -20,7 +20,7 @@ abstract class A {
 }
 abstract class B extends Diamond(A) {
 	constructor(arg: string) {
-		super(arg + 'B')
+		super(`${arg}B`)
 		this.log('construct B')
 	}
 	absFunc(x: number): number {
@@ -34,7 +34,7 @@ abstract class B extends Diamond(A) {
 }
 abstract class C extends Diamond(A) {
 	constructor(arg: string) {
-		super(arg + 'C')
+		super(`${arg}C`)
 		this.log('construct C')
 	}
 	fieldC = true
@@ -46,7 +46,7 @@ abstract class C extends Diamond(A) {
 //@ts-expect-error Here, if D extends diamond(B, C), then it's not considered abstract - cf README.md#abstraction
 class D extends Diamond(C, B) {
 	constructor(arg: string) {
-		super(arg + 'D')
+		super(`${arg}D`)
 		this.log('construct D')
 	}
 	fieldD = true
@@ -67,7 +67,7 @@ test('call orders', () => {
 		'[class=A] construct A',
 		'[class=D] construct B',
 		'[class=D] construct C',
-		'[class=D] construct D'
+		'[class=D] construct D',
 	])
 	expect([obj.fieldA, obj.fieldB, obj.fieldC, obj.fieldD]).toEqual([true, true, true, true])
 	expect(obj.func(0)).toBe(6)
@@ -76,6 +76,6 @@ test('call orders', () => {
 		'[class=D] func D',
 		'[class=D] func C',
 		'[class=D] func B',
-		'[class=D] func A'
+		'[class=D] func A',
 	])
 })

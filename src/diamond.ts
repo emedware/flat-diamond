@@ -1,15 +1,15 @@
-import { Ctor, HasBases, Newable } from './types'
+import type { Ctor, HasBases, Newable } from './types'
 import {
+	LateSuperError,
 	allFLegs,
 	bottomLeg,
 	emptySecludedProxyHandler,
 	fLegs,
 	hasInstanceManager,
 	hasInstanceManagers,
-	LateSuperError,
 	linearLeg,
 	manageHasInstance,
-	nextInFLeg
+	nextInFLeg,
 } from './utils'
 
 type BuildingStrategy = {
@@ -47,12 +47,12 @@ const diamondHandler: {
 				value: v,
 				writable: true,
 				enumerable: true,
-				configurable: true
+				configurable: true,
 			})
-		else if (pd && pd.set) pd.set.call(receiver, v)
+		else if (pd?.set) pd.set.call(receiver, v)
 		else return false
 		return true
-	}
+	},
 }
 
 /**
@@ -66,8 +66,8 @@ export default function Diamond<TBases extends Ctor[]>(
 	const bases: Ctor[] = []
 	for (const base of baseClasses) {
 		let fLeg = [base, ...(fLegs(base) || [])]
-		let iBases = 0,
-			iFLeg: number
+		let iBases = 0
+		let iFLeg: number
 		do {
 			iFLeg = -1
 			for (iBases = 0; iBases < bases.length; iBases++) {
@@ -90,20 +90,20 @@ export default function Diamond<TBases extends Ctor[]>(
 			lastDiamondProperties = null
 			const { responsibility, bdRestore } = !buildingDiamond
 				? {
-						responsibility: myResponsibility
+						responsibility: myResponsibility,
 					}
 				: buildingDiamond.strategy[0].target === Diamond
 					? {
-							responsibility: buildingDiamond.strategy.shift()!.subs
+							responsibility: buildingDiamond.strategy.shift()!.subs,
 						}
 					: {
 							bdRestore: buildingDiamond,
-							responsibility: myResponsibility
+							responsibility: myResponsibility,
 						}
 			if (!buildingDiamond || bdRestore)
 				buildingDiamond = {
 					built: this,
-					strategy: [...buildingStrategy]
+					strategy: [...buildingStrategy],
 				} // It will be set to `null` on purpose in the process and needs to be restored
 			const locallyStoredDiamond = buildingDiamond!
 			try {
@@ -140,12 +140,13 @@ This happens if a diamond creates another instance of the same diamond in the co
 			lastDiamondProperties = Object.getOwnPropertyDescriptors(locallyStoredDiamond.built)
 			// Value used by `this` on `super(...)` return
 			// @ts-expect-error `Symbol.toStringTag`
+			// biome-ignore lint/correctness/noConstructorReturn: This is the whole purpose of this library
 			return locallyStoredDiamond.built
 		}
 		static [Symbol.hasInstance] = hasInstanceManager(Diamond)
 
 		get [Symbol.toStringTag]() {
-			return 'Diamond<' + bases.map((base) => base.name).join(',') + '>'
+			return `Diamond<${bases.map((base) => base.name).join(',')}>`
 		}
 	}
 	hasInstanceManagers.add(Diamond)
@@ -158,8 +159,13 @@ This happens if a diamond creates another instance of the same diamond in the co
 	let nextResponsibility = myResponsibility
 	for (const base of bases) {
 		nextResponsibility.unshift(base)
-		if (fLegs(base))
-			buildingStrategy.push({ target: bottomLeg(base), subs: (nextResponsibility = []) })
+		if (fLegs(base)) {
+			nextResponsibility = []
+			buildingStrategy.push({
+				target: bottomLeg(base),
+				subs: nextResponsibility,
+			})
+		}
 	}
 
 	Object.setPrototypeOf(Diamond.prototype, new Proxy(Diamond, diamondHandler))

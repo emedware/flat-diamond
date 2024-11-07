@@ -28,9 +28,7 @@ test('dynamic diamond', () => {
 	// <a name="dynamic-diamond"></a>
 	const d = new D()
 	expect(d.method(0)).toBe(10)
-	A.prototype.method = function (x) {
-		return x + 5
-	}
+	A.prototype.method = (x) => x + 5
 	expect(d.method(0)).toBe(14)
 	B.prototype.method = function (this: B, x) {
 		return x + 42

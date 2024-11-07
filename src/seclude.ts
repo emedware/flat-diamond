@@ -1,12 +1,12 @@
 import Diamond, { lastDiamondProperties } from './diamond'
-import { Ctor, KeySet, Newable } from './types'
+import type { Ctor, KeySet, Newable } from './types'
 import {
 	allFLegs,
 	bottomLeg,
 	fLegs,
 	nextInLine,
 	secludedPropertyDescriptor,
-	secludedProxyHandler
+	secludedProxyHandler,
 } from './utils'
 
 const publicPart = <T>(x: T): T => Object.getPrototypeOf(Object.getPrototypeOf(x))
@@ -24,22 +24,21 @@ type SecludedClass<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[
 >
 export type Secluded<
 	TBase extends Ctor,
-	Keys extends (keyof InstanceType<TBase>)[]
-> = SecludedClass<TBase, Keys> & {
-	(obj: InstanceType<SecludedClass<TBase, Keys>>): InstanceType<TBase> | undefined
-}
+	Keys extends (keyof InstanceType<TBase>)[],
+> = SecludedClass<TBase, Keys> &
+	((obj: InstanceType<SecludedClass<TBase, Keys>>) => InstanceType<TBase> | undefined)
 export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBase>)[]>(
 	base: TBase,
 	//@ts-expect-error Cannot convert `never[]` to `Keys`
 	properties: Keys = []
 ): Secluded<TBase, Keys> {
 	const secludedProperties: KeySet = properties.reduce(
-			(acc, p) => ({ ...acc, [p]: true }) as KeySet,
-			Object.create(null)
-		),
-		initPropertiesBasket: BasketBall[] = []
-	const privates = new WeakMap<GateKeeper, TBase>(),
-		diamondSecluded = !fLegs(base)
+		(acc, p) => ({ ...acc, [p]: true }) as KeySet,
+		Object.create(null)
+	)
+	const initPropertiesBasket: BasketBall[] = []
+	const privates = new WeakMap<GateKeeper, TBase>()
+	const diamondSecluded = !fLegs(base)
 	/**
 	 * In order to integrate well in diamonds, we need to be a diamond
 	 * When we create a diamond between the Secluded and the base, the private properties of the base *have to*
@@ -49,8 +48,8 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 		constructor(...args: any[]) {
 			super(...args)
 			initPropertiesBasket[0].initialObject = this
-			const { privateProperties } = initPropertiesBasket[0],
-				allProps = Object.getOwnPropertyDescriptors(this)
+			const { privateProperties } = initPropertiesBasket[0]
+			const allProps = Object.getOwnPropertyDescriptors(this)
 			for (const p in secludedProperties)
 				if (p in allProps) {
 					privateProperties[p] = allProps[p]
@@ -76,8 +75,11 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			}
 			const // This proxy is used to write public properties in the prototype (the public object) and give
 				// access to the private instance methods. It's the one between `Secluded` and the main object
-				//@ts-expect-error ProxyHandler<this> ??
-				protoProxy = new Proxy(this, secludedProxyHandler(base, secludedProperties))
+				protoProxy = new Proxy(
+					this,
+					//@ts-expect-error ProxyHandler<this> ??
+					secludedProxyHandler(base, secludedProperties)
+				)
 			let secluded: InstanceType<TBase>
 			/* Here, what happens:
 			`init.initialObject` is the instance of the secluded class who contains all its public properties
@@ -92,7 +94,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 				secluded = init.initialObject!
 				for (const p of [
 					...Object.getOwnPropertyNames(secluded),
-					...Object.getOwnPropertySymbols(secluded)
+					...Object.getOwnPropertySymbols(secluded),
 				])
 					delete secluded[p]
 				Object.defineProperties(secluded, init.privateProperties)
@@ -107,7 +109,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 	const GateKeeperProxy = new Proxy(GateKeeper, {
 		apply(target, thisArg, argArray) {
 			return privates.get(argArray[0])
-		}
+		},
 	})
 	GateKeeper.prototype.constructor = GateKeeperProxy
 	function whoAmI(receiver: TBase) {
@@ -121,7 +123,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 		return {
 			domain,
 			public: domain === 'public' ? receiver : publicPart(receiver),
-			private: domain === 'private' ? receiver : privates.get(receiver)!
+			private: domain === 'private' ? receiver : privates.get(receiver)!,
 		}
 	}
 	// `Diamond` browse legacies and constructors a lot - we need to provide something
@@ -141,20 +143,18 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 						...pd,
 						value: function (this: any, ...args: any) {
 							return pd.value.apply(privates.get(this) || this, args)
-						}
+						},
 					}
-				else {
-					let modified = { ...pd }
-					if ('get' in pd)
-						modified.get = function (this: any) {
-							return pd.get!.call(privates.get(this) || this)
-						}
-					if ('set' in pd)
-						modified.set = function (this: any, value: any) {
-							return pd.set!.call(privates.get(this) || this, value)
-						}
-					return modified
-				}
+				const modified = { ...pd }
+				if ('get' in pd)
+					modified.get = function (this: any) {
+						return pd.get!.call(privates.get(this) || this)
+					}
+				if ('set' in pd)
+					modified.set = function (this: any, value: any) {
+						return pd.set!.call(privates.get(this) || this, value)
+					}
+				return modified
 			}
 			return undefined
 		},
@@ -204,7 +204,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 					value,
 					writable: true,
 					enumerable: true,
-					configurable: true
+					configurable: true,
 				})
 				return true
 			}
@@ -213,11 +213,11 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 				value,
 				writable: true,
 				enumerable: true,
-				configurable: true
+				configurable: true,
 			})
 			return true
 		},
-		getPrototypeOf: (target) => diamond.prototype
+		getPrototypeOf: (target) => diamond.prototype,
 	})
 	Object.setPrototypeOf(GateKeeper.prototype, fakeCtor.prototype)
 	return GateKeeperProxy as any

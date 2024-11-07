@@ -26,14 +26,14 @@ test('construction', () => {
 
 	class Y extends Diamond(X) {
 		constructor(aValue: string) {
-			super(aValue + ' and Y')
+			super(`${aValue} and Y`)
 			log('Y:', aValue)
 		}
 	}
 	let constructedObjectFromA: any = null
 	class A extends Diamond() {
 		constructor(aValue: string) {
-			super(aValue + ' and A')
+			super(`${aValue} and A`)
 			constructedObjectFromA = this
 			log('A:', aValue)
 		}
@@ -41,14 +41,14 @@ test('construction', () => {
 
 	class B extends Diamond(End2, A) {
 		constructor(aValue: string) {
-			super(aValue + ' and B')
+			super(`${aValue} and B`)
 			log('B:', aValue)
 			new Y('B...')
 		}
 	}
 	class C extends Diamond(B, End1, A) {
 		constructor(aValue: string) {
-			super(aValue + ' and C')
+			super(`${aValue} and C`)
 			log('C:', aValue)
 		}
 	}
@@ -62,7 +62,7 @@ test('construction', () => {
 		'B: X and C',
 		'X: B... and Y',
 		'Y: B...',
-		'C: X'
+		'C: X',
 	])
 	expect(c).toBe(constructedObjectFromA)
 })
@@ -93,17 +93,17 @@ test('sub-diamond', () => {
 	}
 	const a = new A()
 	const distinct: any = {
-			a: a,
-			//aX1: a.x1,
-			//aX2: a.x2,
-			aY1X1: a.y1.x1,
-			aY1X2: a.y1.x2,
-			aY2X1: a.y2.x1,
-			aY2X2: a.y2.x2
-		},
-		distinctMap = new Map<any, string>()
-	for (let k in distinct) {
-		expect(distinctMap.has(distinct[k]) && k + '=' + distinctMap.get(distinct[k])).toBe(false)
+		a: a,
+		//aX1: a.x1,
+		//aX2: a.x2,
+		aY1X1: a.y1.x1,
+		aY1X2: a.y1.x2,
+		aY2X1: a.y2.x1,
+		aY2X2: a.y2.x2,
+	}
+	const distinctMap = new Map<any, string>()
+	for (const k in distinct) {
+		expect(distinctMap.has(distinct[k]) && `${k}=${distinctMap.get(distinct[k])}`).toBe(false)
 		distinctMap.set(distinct[k], k)
 	}
 })

@@ -2,11 +2,11 @@ import Diamond, { Seclude } from '../src'
 
 test('toStringTags', () => {
 	class X {}
-	const S = Seclude(X),
-		s = new S()
+	const S = Seclude(X)
+	const s = new S()
 	expect(s.toString()).toBe('[object Secluded<X>]')
-	const D = Diamond(X),
-		d = new D()
+	const D = Diamond(X)
+	const d = new D()
 	expect(d.toString()).toBe('[object Diamond<X>]')
 })
 

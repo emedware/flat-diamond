@@ -82,7 +82,7 @@ test('constructors', () => {
 		'parent constructor',
 		'mum constructor',
 		'dad constructor',
-		'child constructor'
+		'child constructor',
 	])
 })
 test('methods', () => {

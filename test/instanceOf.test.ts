@@ -11,8 +11,8 @@ class D2 extends D1 {}
 class X1 extends D(A2, B2) {}
 class X2 extends D(C2, D2) {}
 
-const x1 = new X1(),
-	x2 = new X2()
+const x1 = new X1()
+const x2 = new X2()
 
 test('instanceof', () => {
 	expect(x1 instanceof X1).toBe(true)
