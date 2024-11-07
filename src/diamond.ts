@@ -111,6 +111,7 @@ export default function Diamond<TBases extends Ctor[]>(
 					// Even if `Diamond` managed: property initializers do not go through proxy
 					if (locallyStoredDiamond.built !== temp) {
 						if (fLegs(subs))
+							/* istanbul ignore next: internal bug guard */
 							throw new LateSuperError(`Inconsistent diamond hierarchy under [Diamond<${baseClasses.map((b) => b.name).join(',')}>], for ${this.constructor.name},
 This happens if a diamond creates another instance of the same diamond in the constructor before calling \`super(...)\`.`)
 						// import properties from temp object
@@ -137,6 +138,7 @@ This happens if a diamond creates another instance of the same diamond in the co
 				locallyStoredDiamond.built !== this &&
 				Object.getOwnPropertyNames(this).length + Object.getOwnPropertySymbols(this).length > 0
 			)
+				/* istanbul ignore next: internal bug guard */
 				throw new Error('Temporary object must not have own properties or symbols')
 
 			// @ts-expect-error `Symbol.toStringTag`

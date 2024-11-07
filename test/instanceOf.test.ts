@@ -1,4 +1,6 @@
+import Diamond from '../src'
 import D, { Seclude } from '../src'
+import { log, logs } from './logger'
 class A1 {}
 class A2 extends A1 {}
 class B1 {}
@@ -39,4 +41,21 @@ test('secluded', () => {
 	expect(S(s) instanceof S).toBe(true)
 	// Still wondering... Is `MountedPlane` (a `Plane` without `wingSpan`) a `Plane` ?
 	expect(S(s) instanceof X).toBe(true)
+})
+
+test('edge-cases', () => {
+	logs()
+	// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+	class X {
+		static [Symbol.hasInstance](o: any) {
+			// NB: 'o' here is the prototype of the given object to `instance of`
+			log('hasInstance')
+			return true
+		}
+	}
+	Diamond(X)
+	// @ts-expect-error
+	expect(null instanceof X).toBe(false)
+	expect({} instanceof X).toBe(true)
+	expect(logs()).toEqual(['hasInstance'])
 })

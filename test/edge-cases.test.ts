@@ -1,3 +1,4 @@
+import type { Ctor } from 'lib'
 import Diamond, { Seclude } from '../src'
 import { log, logs } from './logger'
 
@@ -45,16 +46,22 @@ describe('before super', () => {
 })
 
 describe('unplanned access', () => {
-	test('undeclared', () => {
-		class X {}
+	test.each([
+		['diamond', class X extends Diamond() {}],
+		['simple', class X {}],
+	])('undeclared on %s', (_: string, X: Ctor) => {
 		const S = Seclude(X as any, ['undeclared']) as any
 		const s = new S()
 		expect(s.undeclared).toBeUndefined()
+		expect(s.undeclaredPublic).toBeUndefined()
 		expect(S(s).undeclared).toBeUndefined()
 		s.undeclared = 1
+		s.undeclaredPublic = 3
 		S(s).undeclared = 2
 		expect(s.undeclared).toBe(1)
+		expect(s.undeclaredPublic).toBe(3)
 		expect(S(s).undeclared).toBe(2)
+		expect(S(s).undeclaredPublic).toBe(3)
 	})
 	test('X-only', () => {
 		class WriteOnly {

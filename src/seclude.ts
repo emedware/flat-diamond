@@ -8,8 +8,6 @@ import {
 	secludedPropertyDescriptor,
 	secludedProxyHandler,
 } from './utils'
-
-const publicPart = <T>(x: T): T => Object.getPrototypeOf(Object.getPrototypeOf(x))
 /**
  * Internally used for communication between `PropertyCollector` and `Secluded`
  * This is the "baal" `Secluded` send into the "basket" (stack in case a secluded class inherits another secluded class)
@@ -92,11 +90,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			if (!diamondSecluded) secluded = Object.create(protoProxy, init.privateProperties)
 			else {
 				secluded = init.initialObject!
-				for (const p of [
-					...Object.getOwnPropertyNames(secluded),
-					...Object.getOwnPropertySymbols(secluded),
-				])
-					delete secluded[p]
+				// No need to empty the own properties: this has been done in `Diamond` `if (locallyStoredDiamond.built !== temp)`
 				Object.defineProperties(secluded, init.privateProperties)
 				Object.setPrototypeOf(secluded, protoProxy)
 			}
@@ -112,22 +106,14 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 		},
 	})
 	GateKeeper.prototype.constructor = GateKeeperProxy
-	function whoAmI(receiver: TBase) {
-		const domain = privates.has(receiver)
-			? 'public'
-			: privates.get(publicPart(receiver)) === receiver
-				? 'private'
-				: 'error'
-		// If it's not test-covered, it means all the tests pass: this should never happen
-		if (domain === 'error') throw new Error('Invalid seclusion domain')
-		return {
-			domain,
-			public: domain === 'public' ? receiver : publicPart(receiver),
-			private: domain === 'private' ? receiver : privates.get(receiver)!,
-		}
-	}
 	// `Diamond` browse legacies and constructors a lot - we need to provide something
 	function fakeCtor() {}
+	function assertSecluded(receiver: GateKeeper) {
+		const rv = privates.get(receiver)
+		/* istanbul ignore next: internal bug guard */
+		if (!rv) throw new Error('Secluded object not created')
+		return rv
+	}
 	/**
 	 * Mambo jumbo to determine who is `this`
 	 * Because the prototype becomes the object being constructed, we have to invent a constructor who has this object
@@ -142,17 +128,17 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 					return {
 						...pd,
 						value: function (this: any, ...args: any) {
-							return pd.value.apply(privates.get(this) || this, args)
+							return pd.value.apply(assertSecluded(this), args)
 						},
 					}
 				const modified = { ...pd }
 				if (pd.get)
 					modified.get = function (this: any) {
-						return pd.get!.call(privates.get(this) || this)
+						return pd.get!.call(assertSecluded(this))
 					}
 				if (pd.set)
 					modified.set = function (this: any, value: any) {
-						return pd.set!.call(privates.get(this) || this, value)
+						return pd.set!.call(assertSecluded(this), value)
 					}
 				return modified
 			}
@@ -165,51 +151,39 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 				case Symbol.toStringTag:
 					return `Secluded<${target.name}>`
 			}
-			const actor = whoAmI(receiver)
-			if (p in target.prototype && (!(p in secludedProperties) || actor.domain === 'private')) {
+			const secluded = assertSecluded(receiver)
+			if (p in target.prototype && !(p in secludedProperties)) {
 				const pd = nextInLine(target, p)!
 				if (!pd) return Reflect.get(target.prototype, p, receiver)
-				if (pd.get) return pd.get!.call(actor.private)
+				if (pd.get) return pd.get!.call(secluded)
 				if ('value' in pd) {
 					const rv = pd.value!
 					return typeof rv === 'function'
 						? function (this: any, ...args: any) {
-								return rv.apply(actor.private, args)
+								return rv.apply(secluded, args)
 							}
 						: rv
 				}
 				// No legacy involved: it was well defined in our classes but `readable: false` ...
 				return undefined
 			}
-			if (p in secludedProperties && actor.domain === 'private')
-				// If we arrive here, it means it's private but not set in the private part
-				return undefined
-			if (allFLegs.has(actor.public)) return Reflect.get(bottomLeg(target), p, receiver)
+			// if `receiver` is a diamond, pass the hand to "fLeg" management (the diamond, `bottomLeg`)
+			if (fLegs(target)) return Reflect.get(bottomLeg(target), p, receiver)
 			// If we arrive here, it means it's public but not set in the public part
 			return undefined
 		},
 		set(target, p, value, receiver) {
-			const actor = whoAmI(receiver)
+			const secluded = assertSecluded(receiver)
 			if (p in target.prototype) {
 				const pd = nextInLine(target, p)!
 				if (pd.set) {
-					pd.set!.call(actor.private, value)
+					pd.set!.call(secluded, value)
 					return true
 				}
 				if (!pd.writable) return false
 			}
-
-			if (p in secludedProperties && actor.domain === 'private') {
-				Object.defineProperty(receiver, p, {
-					value,
-					writable: true,
-					enumerable: true,
-					configurable: true,
-				})
-				return true
-			}
-			if (allFLegs.has(actor.public)) return Reflect.set(bottomLeg(target), p, value, receiver)
-			Object.defineProperty(actor.public, p, {
+			if (fLegs(target)) return Reflect.set(bottomLeg(target), p, value, receiver)
+			Object.defineProperty(receiver, p, {
 				value,
 				writable: true,
 				enumerable: true,
@@ -217,7 +191,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			})
 			return true
 		},
-		getPrototypeOf: (target) => diamond.prototype,
+		getPrototypeOf: () => diamond.prototype,
 	})
 	Object.setPrototypeOf(GateKeeper.prototype, fakeCtor.prototype)
 	return GateKeeperProxy as any
