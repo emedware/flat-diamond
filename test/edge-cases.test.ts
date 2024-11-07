@@ -1,5 +1,4 @@
-import type { Ctor } from 'lib'
-import Diamond, { Seclude } from '../src'
+import Diamond, { Seclude, type Ctor } from '../src'
 import { log, logs } from './logger'
 
 test('toStringTags', () => {
