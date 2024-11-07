@@ -29,7 +29,8 @@
 		"test:coverage": "jest --coverage",
 		"build": "rollup -c",
 		"biome": "biome check --write",
-		"prepack": "npm run biome && npm run test && npm run build"
+		"lint": "biome check",
+		"prepack": "npm run lint && npm run test && npm run build"
 	},
 	"repository": {
 		"type": "git",
