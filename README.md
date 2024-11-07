@@ -70,11 +70,15 @@ Also note that `Diamond(...)` are useful even when inheriting no or one class: T
 
 No, and even well constructed! In the previous example (`C - A - B - X`), invoking `new C()` will invoke the constructors of `C`, `A`, `B` then `X` in sequence.
 
+# Explanations and edge cases
+
+> :bell: The following is for details on edge cases and explanations on "how to" and how it works. The documentation needed to be able to use it is above.
+
 ## But ... How ?
 
 The class created by the library (`Diamond(A, B)`) has a `Proxy` `prototype` (understand who can) who allow accessing the whole legacy of an object, from its constructor 'flat legacy'.
 
-### There is no `get constructor()`
+## There is no `get constructor()`
 
 The construction scheme is a bit complex as a `Diamond` class is geared to build its legacy and the legacy of others.
 
@@ -219,7 +223,7 @@ When a secluded class is implemented (here, a `Plane`), the instance prototype w
 
 Because of prototyping, `Secluded<Plane>` has access to all the functionalities of `DuckCourier` (and therefore of `Plane`) while never interfering with `DuckCourier::wingSpan`. Also, having several secluded class in the legacy list will only create several "heads" who will share a prototype.
 
-`DuckCourier` on another hand, _can_ interfere with `Plane::wingSpan` if needed thanks to the fact a `Secluded` class is also a function to retrieve a private part.
+`DuckCourier` on another hand, _can_ interfere with `Plane::wingSpan` if needed thanks to the fact a `Secluded` class is also a function to retrieve the private part.
 
 ```ts
 import { Seclude } from 'flat-diamond'
@@ -238,6 +242,8 @@ class DuckCourier extends MountedPlane {
 }
 ```
 
+> Note: `MountedPlane(this)` returns directly the instance with the good prototype for the private parts - hence, there is no need to `bind`, `.call(...)` or `.apply(...)` functions.
+
 ## Seclusion and...
 
 ### ...construction
@@ -249,6 +255,10 @@ The `Secluded<Plane>` will indeed be the object the `Plane` constructor built! I
 Yes, it's okay...
 
 So, secluding can also be useful when some class specify different methods with the same name, so that each has its unique version (unaccessible from outside)
+
+### ...diamonds
+
+If `A` extends `B` who extends a `Diamond(...)`, the fields and methods of `A` and `B` only will be secluded.
 
 # Real world
 

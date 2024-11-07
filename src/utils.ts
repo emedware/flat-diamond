@@ -54,9 +54,14 @@ export const secludedPropertyDescriptor: PropertyDescriptor = {
  * @param ctor The constructor whose FLeg is being searched
  * @param name The name of the property
  * @param diamond The calling diamond
- * @returns
+ * @returns The property found
+ * @throws {Error} If `diamond` is not in the fLeg of `ctor`
  */
-export function nextInFLeg(ctor: Ctor, name: PropertyKey, diamond: Ctor) {
+export function nextInFLeg(
+	ctor: Ctor,
+	name: PropertyKey,
+	diamond: Ctor
+): PropertyDescriptor | undefined {
 	const fLeg = fLegs(ctor)
 	if (!fLeg) throw new Error('Inconsistent diamond hierarchy')
 	let ndx = bottomLeg(ctor) === diamond ? 0 : -1
@@ -78,27 +83,29 @@ export function secludedProxyHandler<TBase extends Ctor>(
 ) {
 	return {
 		get(target, p, receiver) {
+			// `p in base.prototype` => access secluded instance method
 			if (base && p in base.prototype) {
 				const pd = nextInLine(base, p)
 				return pd && (pd.value || pd.get!.call(receiver))
 			}
-			return p in secludedProperties ? undefined : Reflect.get(target, p, receiver)
+			return p in secludedProperties ? undefined : Reflect.get(target, p, target)
 		},
 		set(target, p, value, receiver) {
-			if (p in secludedProperties)
+			if (p in secludedProperties) {
 				Object.defineProperty(receiver, p, {
 					value,
 					writable: true,
 					enumerable: true,
 					configurable: true
 				})
-			else return Reflect.set(target, p, value, target)
-			return true
+				return true
+			}
+			return Reflect.set(target, p, value, target)
 		},
 		getPrototypeOf: (target) => target
 	} as ProxyHandler<Ctor>
 }
-export const emptySecludedProxyHandler = secludedProxyHandler(null, {})
+export const emptySecludedProxyHandler = secludedProxyHandler(null, Object.create(null))
 
 export function hasInstanceManager<Class extends Ctor>(
 	cls: Class,

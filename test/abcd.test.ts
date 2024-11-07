@@ -1,9 +1,12 @@
 import Diamond from '../src'
 import { log, logs } from './logger'
 
+let builtA: A | undefined
+
 abstract class A {
 	constructor(public arg: string) {
 		this.log('construct A')
+		builtA = this
 	}
 	log(...args: any[]) {
 		log(`[class=${this.constructor.name}]`, ...args)
@@ -59,6 +62,7 @@ beforeEach(() => {
 
 test('call orders', () => {
 	const obj = new D('o')
+	expect(builtA instanceof A).toBe(true)
 	expect(logs()).toEqual([
 		'[class=A] construct A',
 		'[class=D] construct B',

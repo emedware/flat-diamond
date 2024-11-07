@@ -9,7 +9,7 @@ import {
 	secludedProxyHandler
 } from './utils'
 
-const publicPart = (x: Ctor): Ctor => Object.getPrototypeOf(Object.getPrototypeOf(x))
+const publicPart = <T>(x: T): T => Object.getPrototypeOf(Object.getPrototypeOf(x))
 /**
  * Internally used for communication between `PropertyCollector` and `Secluded`
  * This is the "baal" `Secluded` send into the "basket" (stack in case a secluded class inherits another secluded class)
@@ -35,7 +35,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 ): Secluded<TBase, Keys> {
 	const secludedProperties: KeySet = properties.reduce(
 			(acc, p) => ({ ...acc, [p]: true }) as KeySet,
-			{}
+			Object.create(null)
 		),
 		initPropertiesBasket: BasketBall[] = []
 	const privates = new WeakMap<GateKeeper, TBase>(),
@@ -117,7 +117,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 				? 'private'
 				: 'error'
 		// If it's not test-covered, it means all the tests pass: this should never happen
-		if (domain === 'error') throw new Error('Invalid domain')
+		if (domain === 'error') throw new Error('Invalid seclusion domain')
 		return {
 			domain,
 			public: domain === 'public' ? receiver : publicPart(receiver),

@@ -1,7 +1,6 @@
 import { Ctor, HasBases, Newable } from './types'
 import {
 	allFLegs,
-	bottomLeg,
 	emptySecludedProxyHandler,
 	fLegs,
 	hasInstanceManager,
@@ -14,6 +13,9 @@ import {
 type BuildingStrategy = Map<Ctor, Ctor[]>
 let buildingDiamond: {
 	built: object
+	// TODO: Not a map, should be a stack where each elements are popped one by one, we know the order
+	// It could allow 'Inconsistent diamond hierarchy' to become a warning?
+	// (the error would be checked when exiting the stack)
 	strategy: BuildingStrategy
 } | null = null
 
