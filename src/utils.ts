@@ -1,5 +1,12 @@
 import { Ctor, KeySet } from './types'
 
+export class LateSuperError extends Error {
+	constructor(message: string) {
+		super(message)
+		this.name = 'LateSuperError'
+	}
+}
+
 /**
  * Gives all the classes from the base up to just before Object
  * Note: In "uni-legacy", the parent of Diamond is Object
@@ -63,10 +70,12 @@ export function nextInFLeg(
 	diamond: Ctor
 ): PropertyDescriptor | undefined {
 	const fLeg = fLegs(ctor)
+	/* istanbul ignore next: internal bug guard */
 	if (!fLeg) throw new Error('Inconsistent diamond hierarchy')
 	let ndx = bottomLeg(ctor) === diamond ? 0 : -1
 	if (ndx < 0) {
 		ndx = fLeg.findIndex((base) => bottomLeg(base) === diamond) + 1
+		/* istanbul ignore next: internal bug guard */
 		if (ndx <= 0) throw new Error('Inconsistent diamond hierarchy')
 	}
 	let rv: PropertyDescriptor | undefined
@@ -92,6 +101,7 @@ export function secludedProxyHandler<TBase extends Ctor>(
 		},
 		set(target, p, value, receiver) {
 			if (p in secludedProperties) {
+				// Occurs when a private field had no value in the private part yet
 				Object.defineProperty(receiver, p, {
 					value,
 					writable: true,

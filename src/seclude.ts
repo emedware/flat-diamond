@@ -163,11 +163,12 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 				case 'constructor':
 					return fakeCtor
 				case Symbol.toStringTag:
-					return `[Secluded<${target.name}>]`
+					return `Secluded<${target.name}>`
 			}
 			const actor = whoAmI(receiver)
 			if (p in target.prototype && (!(p in secludedProperties) || actor.domain === 'private')) {
 				const pd = nextInLine(target, p)!
+				if (!pd) return Reflect.get(target.prototype, p, receiver)
 				if ('get' in pd) return pd.get!.call(actor.private)
 				if ('value' in pd) {
 					const rv = pd.value!

@@ -189,7 +189,8 @@ D2(0)
 
 ### Construction concern
 
-Building another diamond in the constructor before calling `super(...)` will break the game. (Fields are initialized when `super` returns - no worries there)
+If a diamond creates an instance of the same diamond (itself) in its constructor before calling `super(...)`, a `LateSuperError` will be thrown.
+Fields are initialized when `super` returns - no worries there
 
 # Seclusion
 
