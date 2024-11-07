@@ -18,10 +18,6 @@ type BuildingStrategy = {
 }[]
 let buildingDiamond: {
 	built: object
-	// TODO: Not a map, should be a stack where each elements are popped one by one, we know the order
-	// It could allow 'Inconsistent diamond hierarchy' to become a warning?
-	// (the error would be checked when exiting the stack)
-	// Also, we might have undetected conflict (2 objects ending up in the same `this`)
 	strategy: BuildingStrategy
 } | null = null
 
@@ -35,7 +31,7 @@ const diamondHandler: {
 		return pd
 			? 'value' in pd
 				? pd.value
-				: 'get' in pd
+				: pd.get
 					? pd.get!.call(receiver)
 					: undefined
 			: ({} as any)[p]
@@ -126,7 +122,6 @@ This happens if a diamond creates another instance of the same diamond in the co
 						// Useless in most cases, but if that object was given out as a reference, it can still
 						// be interacted with
 						for (const p of Object.getOwnPropertyNames(temp)) delete temp[p]
-						// TODO: test this fake "head"
 						Object.setPrototypeOf(
 							temp,
 							new Proxy(locallyStoredDiamond.built, emptySecludedProxyHandler)
@@ -138,7 +133,12 @@ This happens if a diamond creates another instance of the same diamond in the co
 				buildingDiamond = bdRestore ?? null
 			}
 			lastDiamondProperties = Object.getOwnPropertyDescriptors(locallyStoredDiamond.built)
-			// Value used by `this` on `super(...)` return
+			if (
+				locallyStoredDiamond.built !== this &&
+				Object.getOwnPropertyNames(this).length + Object.getOwnPropertySymbols(this).length > 0
+			)
+				throw new Error('Temporary object must not have own properties or symbols')
+
 			// @ts-expect-error `Symbol.toStringTag`
 			// biome-ignore lint/correctness/noConstructorReturn: This is the whole purpose of this library
 			return locallyStoredDiamond.built

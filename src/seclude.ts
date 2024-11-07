@@ -146,11 +146,11 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 						},
 					}
 				const modified = { ...pd }
-				if ('get' in pd)
+				if (pd.get)
 					modified.get = function (this: any) {
 						return pd.get!.call(privates.get(this) || this)
 					}
-				if ('set' in pd)
+				if (pd.set)
 					modified.set = function (this: any, value: any) {
 						return pd.set!.call(privates.get(this) || this, value)
 					}
@@ -158,7 +158,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			}
 			return undefined
 		},
-		get: (target, p, receiver) => {
+		get(target, p, receiver) {
 			switch (p) {
 				case 'constructor':
 					return fakeCtor
@@ -169,7 +169,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			if (p in target.prototype && (!(p in secludedProperties) || actor.domain === 'private')) {
 				const pd = nextInLine(target, p)!
 				if (!pd) return Reflect.get(target.prototype, p, receiver)
-				if ('get' in pd) return pd.get!.call(actor.private)
+				if (pd.get) return pd.get!.call(actor.private)
 				if ('value' in pd) {
 					const rv = pd.value!
 					return typeof rv === 'function'
@@ -188,11 +188,11 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 			// If we arrive here, it means it's public but not set in the public part
 			return undefined
 		},
-		set: (target, p, value, receiver) => {
+		set(target, p, value, receiver) {
 			const actor = whoAmI(receiver)
 			if (p in target.prototype) {
 				const pd = nextInLine(target, p)!
-				if ('set' in pd) {
+				if (pd.set) {
 					pd.set!.call(actor.private, value)
 					return true
 				}

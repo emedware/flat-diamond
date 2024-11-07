@@ -63,6 +63,7 @@ beforeEach(() => {
 test('call orders', () => {
 	const obj = new D('o')
 	expect(builtA instanceof A).toBe(true)
+	expect(builtA === obj).toBe(false)
 	expect(logs()).toEqual([
 		'[class=A] construct A',
 		'[class=D] construct B',
@@ -72,6 +73,14 @@ test('call orders', () => {
 	expect([obj.fieldA, obj.fieldB, obj.fieldC, obj.fieldD]).toEqual([true, true, true, true])
 	expect(obj.func(0)).toBe(6)
 	expect(obj.arg).toBe('oDCB')
+	expect(logs()).toEqual([
+		'[class=D] func D',
+		'[class=D] func C',
+		'[class=D] func B',
+		'[class=D] func A',
+	])
+	expect(builtA?.func(0)).toBe(6)
+	expect(builtA?.arg).toBe('oDCB')
 	expect(logs()).toEqual([
 		'[class=D] func D',
 		'[class=D] func C',
