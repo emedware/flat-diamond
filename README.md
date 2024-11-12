@@ -276,7 +276,7 @@ Knowing that the whole documentation here is about rarely occurring edge cases a
     > Some times, it's cheaper to just buy another RAM stick than to spend a week on an optimization
 -   Automate bookkeeping of types - task that can be tedious in TypeScript
 
-`flat-diamond` does not create security issues nor performance bottlenecks. It might add ~5Kb of code to load, it might add a little overtime on some function calls - but if a code does a bit more than calling NOOP billions of times, it is negligible.
+`flat-diamond` does not create security issues nor performance bottlenecks. It might add 5~6Kb of code to load, it might add a little overtime on some function calls - but if a code does a bit more than calling NOOP billions of times, it is negligible.
 
 ## Participation
 

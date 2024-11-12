@@ -3,5 +3,5 @@
 /coverage
 .*
 jest.*
-eslint.*
+biome.*
 rollup.*
