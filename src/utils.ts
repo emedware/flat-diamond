@@ -79,10 +79,10 @@ export function nextInFLeg(
 		/* istanbul ignore next: internal bug guard */
 		if (ndx <= 0) throw new Error('Inconsistent diamond hierarchy')
 	}
-	let rv: PropertyDescriptor | undefined
-	do rv = nextInLine(fLeg[ndx++], name)
-	while (!rv && ndx < fLeg.length)
-	return rv
+	while (ndx < fLeg.length) {
+		const rv = nextInLine(fLeg[ndx++], name)
+		if (rv) return rv
+	}
 }
 
 export const allFLegs = new WeakMap<Ctor, Ctor[]>()

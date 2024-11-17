@@ -59,6 +59,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 		}
 	}
 	const diamond = diamondSecluded ? Diamond(PropertyCollector) : PropertyCollector
+	// TODO: Should be a function with a proxy prototype: not a prototype whose prototype is a proxy
 	class GateKeeper extends diamond {
 		/*static (obj: GateKeeper): TBase | undefined {
 			return privates.get(obj)
@@ -115,7 +116,7 @@ export function Seclude<TBase extends Ctor, Keys extends (keyof InstanceType<TBa
 		return rv
 	}
 	/**
-	 * Mambo jumbo to determine who is `this`
+	 * Mumbo jumbo to determine who is `this`
 	 * Because the prototype becomes the object being constructed, we have to invent a constructor who has this object
 	 * as prototype
 	 */

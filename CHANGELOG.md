@@ -1,10 +1,17 @@
+# 1.0.11
+
+## Fix
+
+- Source map restoration
+- prototype line consistence
+
 # 1.0.10
 
 ## Change
 
 - linter from prettier+eslint to biome
 
-## Bug-fix
+## Fix
 
 -   `KeySet` now rooted on `Object.create(null)` instead of `{}` so that `'constructor' in secludedProperties` is false
 -   Temporary object (modified as head with `this` diamond as proxy) now has good constructor and `instanceof`
