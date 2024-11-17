@@ -21,36 +21,6 @@ let buildingDiamond: {
 	strategy: BuildingStrategy
 } | null = null
 
-const diamondHandler: {
-	get(target: Ctor, p: PropertyKey, receiver: Ctor): any
-	set(target: Ctor, p: PropertyKey, v: any, receiver: Ctor): boolean
-} & ProxyHandler<Ctor> = {
-	get(target, p, receiver) {
-		if (p === 'constructor') return Object
-		const pd = nextInFLeg(receiver.constructor, p, target)
-		return pd
-			? 'value' in pd
-				? pd.value
-				: pd.get
-					? pd.get!.call(receiver)
-					: undefined
-			: ({} as any)[p]
-	},
-	set(target, p, v, receiver) {
-		const pd = nextInFLeg(receiver.constructor, p, target)
-		if (!pd || pd.writable)
-			Object.defineProperty(receiver, p, {
-				value: v,
-				writable: true,
-				enumerable: true,
-				configurable: true,
-			})
-		else if (pd?.set) pd.set.call(receiver, v)
-		else return false
-		return true
-	},
-}
-
 /**
  * When secluding a class whose linear legacy ends on a diamond, this is used not to seclude further than the diamond
  */
@@ -80,7 +50,7 @@ export default function Diamond<TBases extends Ctor[]>(
 	}
 	const buildingStrategy: BuildingStrategy = []
 	const myResponsibility: Ctor[] = []
-
+	// TODO: Diamond becomes a function to remove the prototype's prototype who is a proxy
 	class Diamond {
 		constructor(...args: any[]) {
 			lastDiamondProperties = null
@@ -141,16 +111,14 @@ This happens if a diamond creates another instance of the same diamond in the co
 				/* istanbul ignore next: internal bug guard */
 				throw new Error('Temporary object must not have own properties or symbols')
 
-			// @ts-expect-error `Symbol.toStringTag`
 			// biome-ignore lint/correctness/noConstructorReturn: This is the whole purpose of this library
 			return locallyStoredDiamond.built
 		}
 		static [Symbol.hasInstance] = hasInstanceManager(Diamond)
-
-		get [Symbol.toStringTag]() {
-			return `Diamond<${bases.map((base) => base.name).join(',')}>`
-		}
 	}
+	Object.defineProperty(Diamond.prototype, Symbol.toStringTag, {
+		value: `Diamond<${baseClasses.map((base) => base.name).join(',')}>`,
+	})
 	hasInstanceManagers.add(Diamond)
 	allFLegs.set(Diamond, bases)
 	for (const base of baseClasses)
@@ -169,7 +137,47 @@ This happens if a diamond creates another instance of the same diamond in the co
 			})
 		}
 	}
-
-	Object.setPrototypeOf(Diamond.prototype, new Proxy(Diamond, diamondHandler))
-	return <new (...args: any[]) => HasBases<TBases>>(<unknown>Diamond)
+	const linear = bases.reduce((acc, fl) => acc.concat([...linearLeg(fl)]), [] as Ctor[])
+	const mainBase = linear.shift() || Object
+	let proxiedPrototype = (linear.pop() || Object).prototype
+	while (linear.length) {
+		proxiedPrototype = new Proxy(
+			linear.pop()!.prototype,
+			((proxiedPrototype) => ({
+				getPrototypeOf: (_) => proxiedPrototype,
+			}))(proxiedPrototype)
+		)
+	}
+	const prototype = new Proxy(mainBase.prototype, {
+		get(target, p, receiver) {
+			if (receiver === prototype && Object.getOwnPropertyDescriptor(target, p))
+				return Reflect.get(target, p, target)
+			const pd = nextInFLeg(receiver.constructor, p, Diamond)
+			return pd
+				? 'value' in pd
+					? pd.value
+					: pd.get
+						? pd.get!.call(receiver)
+						: undefined
+				: ({} as any)[p]
+		},
+		set(target, p, v, receiver) {
+			if (receiver === prototype && Object.getOwnPropertyDescriptor(target, p))
+				return Reflect.get(target, p, target)
+			const pd = nextInFLeg(receiver.constructor, p, Diamond)
+			if (!pd || pd.writable)
+				Object.defineProperty(receiver, p, {
+					value: v,
+					writable: true,
+					enumerable: true,
+					configurable: true,
+				})
+			else if (pd?.set) pd.set.call(receiver, v)
+			else return false
+			return true
+		},
+		getPrototypeOf: (_) => proxiedPrototype,
+	})
+	Object.setPrototypeOf(Diamond.prototype, prototype)
+	return Diamond as Newable<HasBases<TBases>>
 }

@@ -8,7 +8,7 @@ class B extends A {}
 class C extends A {}
 
 class D extends Diamond(B, C) {}
-
+/*
 test('prototype console', () => {
 	const d = new D()
 
@@ -19,7 +19,7 @@ test('prototype console', () => {
 	) {
 		console.log(browser.constructor.name)
 	}
-})
+})*/
 test('prototype line', () => {
 	const expected = ['D', 'Diamond', 'B', 'A', 'C', 'A', 'X', 'Object']
 	const d = new D()
